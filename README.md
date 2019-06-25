@@ -26,4 +26,6 @@
 
 - [Configure PostgreSQL](http://snapforbeginners.com/chapters/postgres-simple.html)
 - [Set up PostgreSQL auth](http://snapforbeginners.com/chapters/auth.html)
+- [snaplet-postgresql-simple](http://hackage.haskell.org/package/snaplet-postgresql-simple-1.2.0.0/docs/Snap-Snaplet-PostgresqlSimple.html)
+- [Binding data in heist with splices](http://snapframework.com/docs/tutorials/heist#heist-programming)
 

@@ -10,6 +10,8 @@ module Site
 
 ------------------------------------------------------------------------------
 import           Control.Applicative
+import           Control.Lens
+import           Data.Monoid
 import           Data.ByteString (ByteString)
 import           Data.Map.Syntax ((##))
 import qualified Data.Text as T
@@ -22,9 +24,28 @@ import           Snap.Snaplet.Session.Backends.CookieSession
 import           Snap.Util.FileServe
 import           Snap.Snaplet.Auth.Backends.PostgresqlSimple
 import           Snap.Snaplet.PostgresqlSimple
+import           Heist
 import qualified Heist.Interpreted as I
+import qualified Text.XmlHtml as X
+
 ------------------------------------------------------------------------------
 import           Application
+
+
+factSplice :: Monad n => I.Splice n
+factSplice = do
+    input <- getParamNode
+    let text = T.unpack $ X.nodeText input
+        n = read text :: Int
+    return [X.TextNode $ T.pack $ show $ product [1..n]]
+
+
+addMySplices :: HasHeist b => Snaplet (Heist b) -> Initializer b v ()
+addMySplices h = addConfig h sc
+    where
+      sc = mempty & scInterpretedSplices .~ is
+      is = do
+            "fact" ## factSplice
 
 
 ------------------------------------------------------------------------------
@@ -83,5 +104,6 @@ app = makeSnaplet "app" "An snaplet example application." Nothing $ do
            initPostgresAuth sess d
     addRoutes routes
     addAuthSplices h auth
+    addMySplices h
     return $ App h s d a
 

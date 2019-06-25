@@ -9,6 +9,8 @@
 
     <p>Congrats!  You're logged in as '<loggedInUser/>'</p>
 
+    <fact>5</fact>
+
     <p><a href="/logout">Logout</a></p>
   </ifLoggedIn>
 
