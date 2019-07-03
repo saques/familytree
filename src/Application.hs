@@ -6,28 +6,17 @@
 module Application where
 
 ------------------------------------------------------------------------------
+import Api.Core (Api(Api))
 import Control.Lens
 import Snap.Snaplet
-import Snap.Snaplet.Heist
-import Snap.Snaplet.Auth
-import Snap.Snaplet.Session
 import Snap.Snaplet.PostgresqlSimple
-
 ------------------------------------------------------------------------------
-data App = App
-    { _heist :: Snaplet (Heist App)
-    , _sess :: Snaplet SessionManager
-    , _db :: Snaplet Postgres
-    , _auth :: Snaplet (AuthManager App)
-    }
+data App = App { 
+                 _api :: Snaplet Api , 
+                 _db   :: Snaplet Postgres          
+               }
 
 makeLenses ''App
 
-instance HasHeist App where
-    heistLens = subSnaplet heist
-
-
 ------------------------------------------------------------------------------
 type AppHandler = Handler App App
-
-
