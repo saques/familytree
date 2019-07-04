@@ -4,7 +4,7 @@
 
 module Api.Core where
 
-
+import           Api.Controllers.UserController
 import           Snap.Core
 import           Control.Lens
 import           Snap.Snaplet
@@ -14,7 +14,8 @@ import qualified Data.ByteString.Char8 as B
 
 data Api = Api
     {
-       _db   :: Snaplet Postgres
+       _db   :: Snaplet Postgres ,
+       _users :: Snaplet UserController
     }
 
 makeLenses ''Api
@@ -27,5 +28,6 @@ respondOk = modifyResponse $ setResponseCode 200
 
 apiInit :: Snaplet Postgres -> SnapletInit b Api
 apiInit d = makeSnaplet "api" "Core Api" Nothing $ do
+    u <- nestSnaplet "users" users $ userControllerInit d
     addRoutes apiRoutes
-    return $ Api d
+    return $ Api d u

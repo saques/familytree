@@ -14,7 +14,8 @@
 2. `cabal install snaplet-postgresql-simple`
 3. On project dir: `cabal install`
 4. Set password for `postgres` user to `postgres` as specified below
-5. Run with `familytree -p <port>`
+5. `psql -h localhost -U postgres -d familytree -a -f schema.sql`
+6. Run with `familytree -p <port>`
 
 ## Devops stuff
 

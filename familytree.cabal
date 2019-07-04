@@ -39,7 +39,8 @@ Executable familytree
     xmlhtml                   ,
     snaplet-postgresql-simple ,
     aeson                     ,
-    postgresql-simple         
+    postgresql-simple         ,
+    jwt                                        
 
      
 
