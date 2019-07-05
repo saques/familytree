@@ -8,6 +8,14 @@
 - Run `cabal install` in project dir
 - Run with `familytree -p <port>`
 
+## RUN FRONTEND
+
+- Install elm: `npm install -g elm` (Should be version 0.19.0)
+- Build Main.elm: `elm make src/Main.elm --output=main.js`
+- Run reactor: `elm reactor`
+- Go to: `http://localhost:8000/index.html`
+- Enjoy
+
 ## Database setup
 
 1. `sudo apt install libpq-dev`
