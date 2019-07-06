@@ -25,6 +25,7 @@ type alias Model =
     , page : Page
     , navState : Navbar.State
     , modalVisibility : Modal.Visibility
+    , counter : Int
     }
 
 type Page
@@ -51,7 +52,7 @@ init flags url key =
             Navbar.initialState NavMsg
 
         ( model, urlCmd ) =
-            urlUpdate url { navKey = key, navState = navState, page = Home, modalVisibility= Modal.hidden }
+            urlUpdate url { navKey = key, navState = navState, page = Home, modalVisibility= Modal.hidden, counter = 0 }
     in
         ( model, Cmd.batch [ urlCmd, navCmd ] )
 
@@ -64,6 +65,7 @@ type Msg
     | NavMsg Navbar.State
     | CloseModal
     | ShowModal
+    | IncrementCounter
 
 
 subscriptions : Model -> Sub Msg
@@ -100,6 +102,13 @@ update msg model =
             ( { model | modalVisibility = Modal.shown }
             , Cmd.none
             )
+
+        IncrementCounter ->
+            ( { model | counter = model.counter + 1 }
+            , Cmd.none
+            )
+
+        
 
 
 
@@ -194,9 +203,10 @@ pageGettingStarted model =
         [ Button.success
         , Button.large
         , Button.block
-        , Button.attrs [ onClick ShowModal ]
+        , Button.attrs [ onClick IncrementCounter ]
         ]
-        [ text "Click me" ]
+        [ text "Increment the counter!"]
+    , h3 [ class "text-center" ] [ text (String.fromInt model.counter) ]
     ]
 
 pageNotFound : List (Html Msg)
