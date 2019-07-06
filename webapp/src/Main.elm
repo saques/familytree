@@ -30,7 +30,6 @@ type alias Model =
 type Page
     = Home
     | GettingStarted
-    | Modules
     | NotFound
 
 
@@ -125,7 +124,6 @@ routeParser =
     UrlParser.oneOf
         [ UrlParser.map Home top
         , UrlParser.map GettingStarted (s "getting-started")
-        , UrlParser.map Modules (s "modules")
         ]
 
 
@@ -151,7 +149,6 @@ menu model =
         |> Navbar.brand [ href "#" ] [ text "Elm Bootstrap" ]
         |> Navbar.items
             [ Navbar.itemLink [ href "#getting-started" ] [ text "Getting started" ]
-            , Navbar.itemLink [ href "#modules" ] [ text "Modules" ]
             ]
         |> Navbar.view model.navState
 
@@ -165,9 +162,6 @@ mainContent model =
 
             GettingStarted ->
                 pageGettingStarted model
-
-            Modules ->
-                pageModules model
 
             NotFound ->
                 pageNotFound
@@ -189,18 +183,6 @@ pageHome model =
                     ]
                 |> Card.view
             ]
-        , Grid.col []
-            [ Card.config [ Card.outlineDanger ]
-                |> Card.headerH4 [] [ text "Modules" ]
-                |> Card.block []
-                    [ Block.text [] [ text "Check out the modules overview" ]
-                    , Block.custom <|
-                        Button.linkButton
-                            [ Button.primary, Button.attrs [ href "#modules" ] ]
-                            [ text "Module" ]
-                    ]
-                |> Card.view
-            ]
         ]
     ]
 
@@ -216,18 +198,6 @@ pageGettingStarted model =
         ]
         [ text "Click me" ]
     ]
-
-
-pageModules : Model -> List (Html Msg)
-pageModules model =
-    [ h1 [] [ text "Modules" ]
-    , Listgroup.ul
-        [ Listgroup.li [] [ text "Alert" ]
-        , Listgroup.li [] [ text "Badge" ]
-        , Listgroup.li [] [ text "Card" ]
-        ]
-    ]
-
 
 pageNotFound : List (Html Msg)
 pageNotFound =
