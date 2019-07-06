@@ -41,6 +41,7 @@ Executable familytree
     aeson                     ,
     postgresql-simple         ,
     jwt                       ,
+    containers                ,
     bcrypt                
 
      

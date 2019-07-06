@@ -8,6 +8,7 @@ module Api.Controllers.UserController (
     ) where
 
 import Api.Types (User(User))
+import Api.Utils
 import Control.Lens (makeLenses)
 import Snap.Core
 import Snap.Snaplet
@@ -21,21 +22,12 @@ import Data.ByteString.Lazy
 import Data.Text.Encoding
 import qualified Data.ByteString.Char8 as B
 
-import Crypto.BCrypt
-
 data UserController = UserController 
     {
         _db   :: Snaplet Postgres
     }
 
 makeLenses ''UserController
-
-mapSecond :: (b -> c) -> (a,b) -> (a,c)
-mapSecond f (a,b) = (a,f b)
-
-addCORS :: Handler b UserController ()
-addCORS = do
-    modifyResponse $ setHeader "Access-Control-Allow-Origin" "*"
 
 apiRoutes :: [(B.ByteString, Handler b UserController ())]
 apiRoutes = Prelude.map (mapSecond (addCORS >>))
@@ -45,17 +37,9 @@ apiRoutes = Prelude.map (mapSecond (addCORS >>))
              ("/login/:username", method POST login)]
 
 
-checkPassword :: User -> B.ByteString -> Bool
-checkPassword (User id name password) givenPassword = validatePassword (encodeUtf8 password) givenPassword
-
-hash :: B.ByteString -> Maybe B.ByteString
-hash password = 
-    case maybeSalt of
-        Nothing -> Nothing
-        Just salt -> hashPassword password salt
-    where maybeSalt = genSalt defaultHashAlgorithm 4 "kEwRYWa363DUKTMMAkPaCtb0hIbtlcAPVzZgbYNDT5Q"
-
-
+authRoutes :: [(B.ByteString, Handler b UserController ())]
+authRoutes =  Prelude.map (mapSecond (addCORS >> authenticate >>))
+              [("/authenticated", method GET sampleAuthenticatedMethod)]
 
 login :: Handler b UserController ()
 login = do
@@ -69,11 +53,11 @@ login = do
     if Prelude.null users
         then modifyResponse $ setResponseCode 404
         else if checkPassword (Prelude.head users) password 
-            then modifyResponse $ setResponseCode 200
-            else modifyResponse $ setResponseCode 401
-
-    modifyResponse $ setHeader "Content-Type" "application/json"
-    writeLBS "{ \"imagine\": \"this is a JWT\"}"
+            then do 
+                modifyResponse $ setHeader "Token" (encodeUtf8 (jwtSigned username))
+                modifyResponse $ setResponseCode 200
+            else do 
+                modifyResponse $ setResponseCode 401
 
 getUserByName :: Handler b UserController ()
 getUserByName = do
@@ -108,6 +92,7 @@ postUser = do
                 Just hashed -> do
                     execute "INSERT INTO users (username, password) VALUES (?, ?)" [username, hashed]
                     modifyResponse $ setResponseCode 201
+                    modifyResponse $ setHeader "Token" (encodeUtf8 (jwtSigned username))
                     writeLBS "User created"
                 Nothing -> do
                     modifyResponse $ setResponseCode 500
@@ -116,10 +101,18 @@ postUser = do
             modifyResponse $ setResponseCode 403
             writeLBS "User already exists"
 
+--------------------------------------------------------
+
+sampleAuthenticatedMethod :: Handler b UserController ()
+sampleAuthenticatedMethod = do
+    writeLBS "You are logged in!"
+
+--------------------------------------------------------
 
 userControllerInit :: Snaplet Postgres -> SnapletInit b UserController
 userControllerInit db = makeSnaplet "users" "User Controller" Nothing $ do
     addRoutes apiRoutes
+    addRoutes authRoutes
     return $ UserController db
 
 
