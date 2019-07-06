@@ -21,6 +21,8 @@ import Data.ByteString.Lazy
 import Data.Text.Encoding
 import qualified Data.ByteString.Char8 as B
 
+import Crypto.BCrypt
+
 data UserController = UserController 
     {
         _db   :: Snaplet Postgres
@@ -43,10 +45,16 @@ apiRoutes = Prelude.map (mapSecond (addCORS >>))
              ("/login/:username", method POST login)]
 
 
-validatePassword :: User -> B.ByteString -> Bool
-validatePassword (User id name password) givenPassword
-        | encodeUtf8 password == givenPassword = True
-        | otherwise                 = False
+checkPassword :: User -> B.ByteString -> Bool
+checkPassword (User id name password) givenPassword = validatePassword (encodeUtf8 password) givenPassword
+
+hash :: B.ByteString -> Maybe B.ByteString
+hash password = 
+    case maybeSalt of
+        Nothing -> Nothing
+        Just salt -> hashPassword password salt
+    where maybeSalt = genSalt defaultHashAlgorithm 4 "kEwRYWa363DUKTMMAkPaCtb0hIbtlcAPVzZgbYNDT5Q"
+
 
 
 login :: Handler b UserController ()
@@ -60,7 +68,7 @@ login = do
     
     if Prelude.null users
         then modifyResponse $ setResponseCode 404
-        else if validatePassword (Prelude.head users) password 
+        else if checkPassword (Prelude.head users) password 
             then modifyResponse $ setResponseCode 200
             else modifyResponse $ setResponseCode 401
 
@@ -92,18 +100,21 @@ postUser = do
         password = fromMaybe "" maybePassword
 
     users <- query "SELECT * FROM users WHERE username = ?" (Only username)
-    let anyMatches = Prelude.null users
 
-    if Prelude.null users
-        then do 
-            execute "INSERT INTO users (username, password) VALUES (?, ?)" [username, password]
-            modifyResponse $ setResponseCode 201
+    if Prelude.null $ (users :: [User])
+        then do
+            let maybeHashed = hash password
+            case maybeHashed of 
+                Just hashed -> do
+                    execute "INSERT INTO users (username, password) VALUES (?, ?)" [username, hashed]
+                    modifyResponse $ setResponseCode 201
+                    writeLBS "User created"
+                Nothing -> do
+                    modifyResponse $ setResponseCode 500
+                    writeBS "Error hashing password"
         else do 
-            modifyResponse $ setResponseCode 400
-
-    --I simply dont understand why I need to write this for it to work
-    modifyResponse $ setHeader "Content-Type" "application/json"
-    writeLBS . encode $ (users :: [User])
+            modifyResponse $ setResponseCode 403
+            writeLBS "User already exists"
 
 
 userControllerInit :: Snaplet Postgres -> SnapletInit b UserController

@@ -40,7 +40,8 @@ Executable familytree
     snaplet-postgresql-simple ,
     aeson                     ,
     postgresql-simple         ,
-    jwt                                        
+    jwt                       ,
+    bcrypt                
 
      
 
