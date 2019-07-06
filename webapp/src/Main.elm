@@ -16,6 +16,51 @@ import Bootstrap.Button as Button
 import Bootstrap.ListGroup as Listgroup
 import Bootstrap.Modal as Modal
 
+import List exposing (foldl)
+import Http
+import Json.Decode exposing (Decoder, map2, list, field, string, int)
+
+
+-------------------------------------------------------------------
+
+api : String
+api =
+    "http://localhost:9000/api"
+
+
+
+type alias User = 
+    {
+        username : String ,
+        id : Int
+    }
+
+
+userListDecoder : Decoder (List User)
+userListDecoder =
+  list userDecoder
+
+
+userDecoder : Decoder User
+userDecoder = 
+    map2 User
+        (field "name" string)
+        (field "id" int)
+
+
+getUserByName : String -> Cmd Msg
+getUserByName user =
+  Http.get
+    { url = api ++ "/users/" ++ user
+    , expect = Http.expectJson GotUser userListDecoder
+    }
+
+
+
+-------------------------------------------------------------------
+
+
+
 
 type alias Flags =
     {}
@@ -26,6 +71,7 @@ type alias Model =
     , navState : Navbar.State
     , modalVisibility : Modal.Visibility
     , counter : Int
+    , user : Maybe (List User)
     }
 
 type Page
@@ -52,7 +98,7 @@ init flags url key =
             Navbar.initialState NavMsg
 
         ( model, urlCmd ) =
-            urlUpdate url { navKey = key, navState = navState, page = Home, modalVisibility= Modal.hidden, counter = 0 }
+            urlUpdate url { navKey = key, navState = navState, page = Home, modalVisibility= Modal.hidden, counter = 0, user = Nothing }
     in
         ( model, Cmd.batch [ urlCmd, navCmd ] )
 
@@ -66,6 +112,8 @@ type Msg
     | CloseModal
     | ShowModal
     | IncrementCounter
+    | GetUser
+    | GotUser (Result Http.Error (List User))
 
 
 subscriptions : Model -> Sub Msg
@@ -107,6 +155,19 @@ update msg model =
             ( { model | counter = model.counter + 1 }
             , Cmd.none
             )
+
+        GetUser -> (model, getUserByName "user")
+
+        GotUser result ->
+            case result of
+                Ok newUser ->
+                    ( { model | user = Just newUser }
+                    , Cmd.none
+                    )
+
+                Err _ ->
+                    (model, Cmd.none)
+
 
         
 
@@ -196,6 +257,19 @@ pageHome model =
     ]
 
 
+getName : User -> String
+getName u = u.username
+
+showNames : Maybe (List User) -> String
+showNames user =
+  case user of
+    Nothing ->
+      "No users"
+
+    Just u ->
+      foldl ( getName >> (++) ) "" u
+
+
 pageGettingStarted : Model -> List (Html Msg)
 pageGettingStarted model =
     [ h2 [] [ text "Getting started" ]
@@ -203,10 +277,10 @@ pageGettingStarted model =
         [ Button.success
         , Button.large
         , Button.block
-        , Button.attrs [ onClick IncrementCounter ]
+        , Button.attrs [ onClick GetUser ]
         ]
         [ text "Increment the counter!"]
-    , h3 [ class "text-center" ] [ text (String.fromInt model.counter) ]
+    , h3 [ class "text-center" ] [ text (showNames model.user) ]
     ]
 
 pageNotFound : List (Html Msg)

@@ -28,8 +28,16 @@ data UserController = UserController
 
 makeLenses ''UserController
 
+mapSecond :: (b -> c) -> (a,b) -> (a,c)
+mapSecond f (a,b) = (a,f b)
+
+addCORS :: Handler b UserController ()
+addCORS = do
+    modifyResponse $ setHeader "Access-Control-Allow-Origin" "*"
+
 apiRoutes :: [(B.ByteString, Handler b UserController ())]
-apiRoutes = [("/", method GET getUsers),
+apiRoutes = Prelude.map (mapSecond (addCORS >>))
+            [("/", method GET getUsers),
              ("/:username", method GET getUserByName),
              ("/:username", method POST postUser),
              ("/login/:username", method POST login)]
@@ -39,7 +47,6 @@ validatePassword :: User -> B.ByteString -> Bool
 validatePassword (User id name password) givenPassword
         | encodeUtf8 password == givenPassword = True
         | otherwise                 = False
-
 
 
 login :: Handler b UserController ()
