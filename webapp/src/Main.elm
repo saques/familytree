@@ -9,31 +9,21 @@ import Url exposing (Url)
 import Url.Parser as UrlParser exposing ((</>), Parser, s, top)
 import Bootstrap.Navbar as Navbar
 import Bootstrap.Grid as Grid
-import Bootstrap.Grid.Col as Col
 import Bootstrap.Card as Card
 import Bootstrap.Card.Block as Block
 import Bootstrap.Button as Button
-import Bootstrap.ListGroup as Listgroup
 import Bootstrap.Modal as Modal
 
-import List exposing (foldl)
-import Http
+import Http exposing (..)
 import Json.Decode exposing (Decoder, map2, list, field, string, int)
 
-
--------------------------------------------------------------------
-
-api : String
-api =
-    "http://localhost:9000/api"
-
+import Model exposing (..)
+import Snippets.LoginModal exposing (..)
+import Snippets.Navbar exposing (..)
+import HttpHelper exposing (..)
+import Utils exposing (..)
 
 
-type alias User = 
-    {
-        username : String ,
-        id : Int
-    }
 
 
 userListDecoder : Decoder (List User)
@@ -48,36 +38,25 @@ userDecoder =
         (field "id" int)
 
 
-getUserByName : String -> Cmd Msg
-getUserByName user =
+getUsers : Cmd Msg
+getUsers =
   Http.get
-    { url = api ++ "/users/" ++ user
+    { url = api ++ "users"
     , expect = Http.expectJson GotUser userListDecoder
     }
+
+createUser : Model -> Cmd Msg
+createUser model = 
+    Http.post
+        {
+            url = (api ++ "users/" ++ model.userLogin.username),
+            body = formBody [("password", model.userLogin.password)],
+            expect = Http.expectWhatever ResponseCreateUser
+        }
 
 
 
 -------------------------------------------------------------------
-
-
-
-
-type alias Flags =
-    {}
-
-type alias Model =
-    { navKey : Navigation.Key
-    , page : Page
-    , navState : Navbar.State
-    , modalVisibility : Modal.Visibility
-    , counter : Int
-    , user : Maybe (List User)
-    }
-
-type Page
-    = Home
-    | GettingStarted
-    | NotFound
 
 
 main : Program Flags Model Msg
@@ -98,22 +77,15 @@ init flags url key =
             Navbar.initialState NavMsg
 
         ( model, urlCmd ) =
-            urlUpdate url { navKey = key, navState = navState, page = Home, modalVisibility= Modal.hidden, counter = 0, user = Nothing }
+            urlUpdate url { navKey = key, 
+                            navState = navState, 
+                            page = Home, 
+                            modalVisibility = Modal.hidden, 
+                            counter = 0, 
+                            user = Nothing, 
+                            userLogin = UserLogin "" "" "" }
     in
         ( model, Cmd.batch [ urlCmd, navCmd ] )
-
-
-
-
-type Msg
-    = UrlChange Url
-    | ClickedLink UrlRequest
-    | NavMsg Navbar.State
-    | CloseModal
-    | ShowModal
-    | IncrementCounter
-    | GetUser
-    | GotUser (Result Http.Error (List User))
 
 
 subscriptions : Model -> Sub Msg
@@ -156,7 +128,7 @@ update msg model =
             , Cmd.none
             )
 
-        GetUser -> (model, getUserByName "user")
+        GetUser -> (model, getUsers)
 
         GotUser result ->
             case result of
@@ -167,6 +139,20 @@ update msg model =
 
                 Err _ ->
                     (model, Cmd.none)
+
+        SetUsername e ->
+            ( { model | userLogin = UserLogin e model.userLogin.password "" }, Cmd.none)
+
+        SetPassword e ->
+            ( { model | userLogin = UserLogin model.userLogin.username e "" }, Cmd.none)
+
+        CreateUser -> (model, createUser model)
+
+        ResponseCreateUser result ->
+            case result of
+                Ok _ -> (model, Cmd.none)
+                Err _ -> ({ model | userLogin = UserLogin model.userLogin.username model.userLogin.password "Error creating user"}, Cmd.none)
+                    
 
 
         
@@ -202,25 +188,12 @@ view model =
     { title = "Elm Bootstrap"
     , body =
         [ div []
-            [ menu model
+            [ navbar model
             , mainContent model
             , modal model
             ]
         ]
     }
-
-
-
-menu : Model -> Html Msg
-menu model =
-    Navbar.config NavMsg
-        |> Navbar.withAnimation
-        |> Navbar.container
-        |> Navbar.brand [ href "#" ] [ text "Elm Bootstrap" ]
-        |> Navbar.items
-            [ Navbar.itemLink [ href "#getting-started" ] [ text "Getting started" ]
-            ]
-        |> Navbar.view model.navState
 
 
 mainContent : Model -> Html Msg
@@ -257,19 +230,6 @@ pageHome model =
     ]
 
 
-getName : User -> String
-getName u = u.username
-
-showNames : Maybe (List User) -> String
-showNames user =
-  case user of
-    Nothing ->
-      "No users"
-
-    Just u ->
-      foldl ( getName >> (++) ) "" u
-
-
 pageGettingStarted : Model -> List (Html Msg)
 pageGettingStarted model =
     [ h2 [] [ text "Getting started" ]
@@ -286,25 +246,5 @@ pageGettingStarted model =
 pageNotFound : List (Html Msg)
 pageNotFound =
     [ h1 [] [ text "Not found" ]
-    , text "SOrry couldn't find that page"
+    , text "Sorry couldn't find that page"
     ]
-
-
-modal : Model -> Html Msg
-modal model =
-    Modal.config CloseModal
-        |> Modal.small
-        |> Modal.h4 [] [ text "Getting started ?" ]
-        |> Modal.body []
-            [ Grid.containerFluid []
-                [ Grid.row []
-                    [ Grid.col
-                        [ Col.xs6 ]
-                        [ text "Col 1" ]
-                    , Grid.col
-                        [ Col.xs6 ]
-                        [ text "Col 2" ]
-                    ]
-                ]
-            ]
-        |> Modal.view model.modalVisibility
