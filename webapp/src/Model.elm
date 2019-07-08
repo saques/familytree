@@ -55,9 +55,12 @@ setToken s u = {u | token = s, isLoggedIn = True, userError = ""}
 isLoggedIn : Model -> Bool 
 isLoggedIn model = model.userLogin.isLoggedIn
 
+logOut : UserLogin -> UserLogin
+logOut u = UserLogin u.username u.password "" "" False
+
 type Page
     = Home
-    | GettingStarted
+    | MainPage
     | NotFound
 
 
@@ -70,7 +73,7 @@ type alias Model =
     , navState : Navbar.State
     , modalVisibility : Modal.Visibility
     , counter : Int
-    , user : Maybe (List User)
+    , authenticatedMessage : String
     , userLogin : UserLogin
     }
 
@@ -81,10 +84,11 @@ type Msg
     | CloseModal
     | ShowModal
     | IncrementCounter
-    | GetUser
-    | GotUser (Result Http.Error (List User))
+    | GetAuthSample
+    | GotAuthSample (Result Http.Error (String))
     | SetUsername String
     | SetPassword String
     | CreateUser
     | Login
+    | Logout
     | ResponseLoginRegister String (Result Http.Error (String))

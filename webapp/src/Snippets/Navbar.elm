@@ -13,17 +13,20 @@ navbar model =
         |> Navbar.withAnimation
         |> Navbar.container
         |> Navbar.brand [ href "#" ] [ text "Elm Bootstrap" ]
-        |> Navbar.items
-            [ Navbar.itemLink [ href "#getting-started" ] [ text "Getting started" ]
-            ]
         |> Navbar.customItems
             [ Navbar.formItem []
-                [ 
-                  Button.button
-                    [ Button.success
-                    , Button.attrs [onClick ShowModal]
-                    ]
-                    [ text "Log in"]
+                [ if not (isLoggedIn model) then
+                    Button.button
+                        [ Button.success
+                        , Button.attrs [onClick ShowModal]
+                        ]
+                        [ text "Log in"]
+                  else
+                    Button.button
+                        [ Button.danger
+                        , Button.attrs [onClick Logout]
+                        ]
+                        [ text "Log out"] 
                 ]
             ]
         |> Navbar.view model.navState

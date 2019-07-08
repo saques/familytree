@@ -20,11 +20,12 @@ import Json.Decode exposing (Decoder, map2, list, field, string, int)
 import Model exposing (..)
 import Snippets.LoginModal exposing (..)
 import Snippets.Navbar exposing (..)
+import Snippets.Home exposing (..)
+import Snippets.MainPage exposing (..)
 import HttpHelper exposing (..)
 import Utils exposing (..)
 
 import Requests.LoginAndRegister exposing (..)
-
 
 userListDecoder : Decoder (List User)
 userListDecoder =
@@ -37,13 +38,14 @@ userDecoder =
         (field "name" string)
         (field "id" int)
 
-
+{-
 getUsers : Cmd Msg
 getUsers =
   Http.get
     { url = api ++ "users"
     , expect = Http.expectJson GotUser userListDecoder
     }
+-}
 
 -------------------------------------------------------------------
 
@@ -71,7 +73,7 @@ init flags url key =
                             page = Home, 
                             modalVisibility = Modal.hidden, 
                             counter = 0, 
-                            user = Nothing, 
+                            authenticatedMessage = "Nothing", 
                             userLogin = UserLogin "" "" "" "" False }
     in
         ( model, Cmd.batch [ urlCmd, navCmd ] )
@@ -117,12 +119,12 @@ update msg model =
             , Cmd.none
             )
 
-        GetUser -> (model, getUsers)
+        GetAuthSample -> (model, testAuthenticatedMethod model)
 
-        GotUser result ->
+        GotAuthSample result ->
             case result of
-                Ok newUser ->
-                    ( { model | user = Just newUser }
+                Ok r ->
+                    ( { model | authenticatedMessage = r }
                     , Cmd.none
                     )
 
@@ -141,13 +143,17 @@ update msg model =
             case result of
                 Ok t -> (
                       {model | userLogin = setToken t model.userLogin, 
-                               modalVisibility = Modal.hidden}, Cmd.none)
+                               modalVisibility = Modal.hidden,
+                               --Go to main page
+                               page = MainPage}, Cmd.none)
 
                 Err e -> (
                     { model | userLogin = setUserError message model.userLogin}
                     , Cmd.none )
 
         Login -> (model, loginUser model)
+
+        Logout -> ({model | userLogin = logOut model.userLogin, page = Home}, Cmd.none)
                     
 
 
@@ -175,7 +181,7 @@ routeParser : Parser (Page -> a) a
 routeParser =
     UrlParser.oneOf
         [ UrlParser.map Home top
-        , UrlParser.map GettingStarted (s "getting-started")
+        , UrlParser.map MainPage (s "main-page")
         ]
 
 
@@ -199,45 +205,12 @@ mainContent model =
             Home ->
                 pageHome model
 
-            GettingStarted ->
-                pageGettingStarted model
+            MainPage ->
+                pageMain model
 
             NotFound ->
                 pageNotFound
 
-
-pageHome : Model -> List (Html Msg)
-pageHome model =
-    [ h1 [] [ text "Home" ]
-    , Grid.row []
-        [ Grid.col []
-            [ Card.config [ Card.outlinePrimary ]
-                |> Card.headerH4 [] [ text "Getting started" ]
-                |> Card.block []
-                    [ Block.text [] [ text "Getting started is real easy. Just click the start button." ]
-                    , Block.custom <|
-                        Button.linkButton
-                            [ Button.primary, Button.attrs [ href "#getting-started" ] ]
-                            [ text "Start" ]
-                    ]
-                |> Card.view
-            ]
-        ]
-    ]
-
-
-pageGettingStarted : Model -> List (Html Msg)
-pageGettingStarted model =
-    [ h2 [] [ text "Getting started" ]
-    , Button.button
-        [ Button.success
-        , Button.large
-        , Button.block
-        , Button.attrs [ onClick GetUser ]
-        ]
-        [ text "Increment the counter!"]
-    , h3 [ class "text-center" ] [ text (showNames model.user) ]
-    ]
 
 pageNotFound : List (Html Msg)
 pageNotFound =

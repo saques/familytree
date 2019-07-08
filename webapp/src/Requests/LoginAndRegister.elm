@@ -45,3 +45,16 @@ loginUser model =
             body = formBody [("password", model.userLogin.password)],
             expect = expectJWT (ResponseLoginRegister "Invalid username or password")
         }
+
+
+testAuthenticatedMethod : Model -> Cmd Msg
+testAuthenticatedMethod model =
+  Http.request
+    { method = "GET"
+    , headers = [(Http.header "Token" model.userLogin.token)]
+    , url = api ++ "users/authenticated"
+    , body = Http.emptyBody
+    , expect = Http.expectString GotAuthSample
+    , timeout = Nothing
+    , tracker = Nothing
+    }

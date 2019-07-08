@@ -21,7 +21,6 @@ import Data.Text.Encoding
 import qualified Data.ByteString.Char8 as B
 
 
-
 mapSecond :: (b -> c) -> (a,b) -> (a,c)
 mapSecond f (a,b) = (a,f b)
 

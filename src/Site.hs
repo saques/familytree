@@ -15,6 +15,7 @@ import           Data.ByteString (ByteString)
 import           Snap.Core
 import           Snap.Snaplet
 import           Snap.Snaplet.PostgresqlSimple
+import           Snap.Util.CORS
 ------------------------------------------------------------------------------
 import           Application
 
@@ -32,4 +33,5 @@ app = makeSnaplet "app" "FamilyTree Rest Api" Nothing $ do
     d <- nestSnaplet "db" db pgsInit
     a <- nestSnaplet "api" api $ apiInit d
     addRoutes routes
+    wrapSite $ applyCORS defaultOptions
     return $ App a d

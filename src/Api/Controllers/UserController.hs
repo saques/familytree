@@ -30,15 +30,14 @@ data UserController = UserController
 makeLenses ''UserController
 
 apiRoutes :: [(B.ByteString, Handler b UserController ())]
-apiRoutes = Prelude.map (mapSecond (addCORS >>))
-            [("/", method GET getUsers),
+apiRoutes =  [("/", method GET getUsers),
              ("/:username", method GET getUserByName),
              ("/:username", method POST postUser),
              ("/login/:username", method POST login)]
 
 
 authRoutes :: [(B.ByteString, Handler b UserController ())]
-authRoutes =  Prelude.map (mapSecond (addCORS >> authenticate >>))
+authRoutes =  Prelude.map (mapSecond (authenticate >>))
               [("/authenticated", method GET sampleAuthenticatedMethod)]
 
 login :: Handler b UserController ()
