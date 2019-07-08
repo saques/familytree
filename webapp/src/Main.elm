@@ -23,7 +23,7 @@ import Snippets.Navbar exposing (..)
 import HttpHelper exposing (..)
 import Utils exposing (..)
 
-
+import Requests.LoginAndRegister exposing (..)
 
 
 userListDecoder : Decoder (List User)
@@ -44,17 +44,6 @@ getUsers =
     { url = api ++ "users"
     , expect = Http.expectJson GotUser userListDecoder
     }
-
-createUser : Model -> Cmd Msg
-createUser model = 
-    Http.post
-        {
-            url = (api ++ "users/" ++ model.userLogin.username),
-            body = formBody [("password", model.userLogin.password)],
-            expect = Http.expectWhatever ResponseCreateUser
-        }
-
-
 
 -------------------------------------------------------------------
 
@@ -83,7 +72,7 @@ init flags url key =
                             modalVisibility = Modal.hidden, 
                             counter = 0, 
                             user = Nothing, 
-                            userLogin = UserLogin "" "" "" }
+                            userLogin = UserLogin "" "" "" "" False }
     in
         ( model, Cmd.batch [ urlCmd, navCmd ] )
 
@@ -141,17 +130,24 @@ update msg model =
                     (model, Cmd.none)
 
         SetUsername e ->
-            ( { model | userLogin = UserLogin e model.userLogin.password "" }, Cmd.none)
+            ( { model | userLogin = setUsername e model.userLogin }, Cmd.none)
 
         SetPassword e ->
-            ( { model | userLogin = UserLogin model.userLogin.username e "" }, Cmd.none)
+            ( { model | userLogin = setPassword e model.userLogin }, Cmd.none)
 
         CreateUser -> (model, createUser model)
 
-        ResponseCreateUser result ->
+        ResponseLoginRegister message result ->
             case result of
-                Ok _ -> (model, Cmd.none)
-                Err _ -> ({ model | userLogin = UserLogin model.userLogin.username model.userLogin.password "Error creating user"}, Cmd.none)
+                Ok t -> (
+                      {model | userLogin = setToken t model.userLogin, 
+                               modalVisibility = Modal.hidden}, Cmd.none)
+
+                Err e -> (
+                    { model | userLogin = setUserError message model.userLogin}
+                    , Cmd.none )
+
+        Login -> (model, loginUser model)
                     
 
 

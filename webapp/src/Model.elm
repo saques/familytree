@@ -35,8 +35,25 @@ type alias UserLogin =
     {
         username : String ,
         password : String ,
-        userLoginError : String
+        userError : String ,
+        token : String , 
+        isLoggedIn : Bool
     }
+
+setUsername : String -> UserLogin -> UserLogin
+setUsername s u = {u | username = s}
+
+setPassword : String -> UserLogin -> UserLogin
+setPassword s u = {u | password = s}
+
+setUserError : String -> UserLogin -> UserLogin
+setUserError s u = {u | userError = s}
+
+setToken : String -> UserLogin -> UserLogin
+setToken s u = {u | token = s, isLoggedIn = True, userError = ""}
+
+isLoggedIn : Model -> Bool 
+isLoggedIn model = model.userLogin.isLoggedIn
 
 type Page
     = Home
@@ -46,9 +63,6 @@ type Page
 
 type alias Flags =
     {}
-
-
-
 
 type alias Model =
     { navKey : Navigation.Key
@@ -72,4 +86,5 @@ type Msg
     | SetUsername String
     | SetPassword String
     | CreateUser
-    | ResponseCreateUser (Result Http.Error ())
+    | Login
+    | ResponseLoginRegister String (Result Http.Error (String))

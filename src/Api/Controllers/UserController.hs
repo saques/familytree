@@ -56,6 +56,7 @@ login = do
             then do 
                 modifyResponse $ setHeader "Token" (encodeUtf8 (jwtSigned username))
                 modifyResponse $ setResponseCode 200
+                writeText (jwtSigned username)
             else do 
                 modifyResponse $ setResponseCode 401
 
@@ -76,7 +77,6 @@ getUsers = do
 
 postUser :: Handler b UserController ()
 postUser = do 
-    --readRequestBody <size>
     maybeUsername <- getParam "username"
     maybePassword <- getPostParam "password"
 
@@ -92,8 +92,7 @@ postUser = do
                 Just hashed -> do
                     execute "INSERT INTO users (username, password) VALUES (?, ?)" [username, hashed]
                     modifyResponse $ setResponseCode 201
-                    modifyResponse $ setHeader "Token" (encodeUtf8 (jwtSigned username))
-                    writeLBS "User created"
+                    writeText (jwtSigned username)
                 Nothing -> do
                     modifyResponse $ setResponseCode 500
                     writeBS "Error hashing password"
