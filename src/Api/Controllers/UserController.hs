@@ -8,6 +8,7 @@ module Api.Controllers.UserController (
     ) where
 
 import Api.Types (User(User))
+import Api.Utils
 import Control.Lens (makeLenses)
 import Snap.Core
 import Snap.Snaplet
@@ -28,26 +29,16 @@ data UserController = UserController
 
 makeLenses ''UserController
 
-mapSecond :: (b -> c) -> (a,b) -> (a,c)
-mapSecond f (a,b) = (a,f b)
-
-addCORS :: Handler b UserController ()
-addCORS = do
-    modifyResponse $ setHeader "Access-Control-Allow-Origin" "*"
-
 apiRoutes :: [(B.ByteString, Handler b UserController ())]
-apiRoutes = Prelude.map (mapSecond (addCORS >>))
-            [("/", method GET getUsers),
+apiRoutes =  [("/", method GET getUsers),
              ("/:username", method GET getUserByName),
              ("/:username", method POST postUser),
              ("/login/:username", method POST login)]
 
 
-validatePassword :: User -> B.ByteString -> Bool
-validatePassword (User id name password) givenPassword
-        | encodeUtf8 password == givenPassword = True
-        | otherwise                 = False
-
+authRoutes :: [(B.ByteString, Handler b UserController ())]
+authRoutes =  Prelude.map (mapSecond (authenticate >>))
+              [("/authenticated", method GET sampleAuthenticatedMethod)]
 
 login :: Handler b UserController ()
 login = do
@@ -60,12 +51,13 @@ login = do
     
     if Prelude.null users
         then modifyResponse $ setResponseCode 404
-        else if validatePassword (Prelude.head users) password 
-            then modifyResponse $ setResponseCode 200
-            else modifyResponse $ setResponseCode 401
-
-    modifyResponse $ setHeader "Content-Type" "application/json"
-    writeLBS "{ \"imagine\": \"this is a JWT\"}"
+        else if checkPassword (Prelude.head users) password 
+            then do 
+                modifyResponse $ setHeader "Token" (encodeUtf8 (jwtSigned username))
+                modifyResponse $ setResponseCode 200
+                writeText (jwtSigned username)
+            else do 
+                modifyResponse $ setResponseCode 401
 
 getUserByName :: Handler b UserController ()
 getUserByName = do
@@ -84,7 +76,6 @@ getUsers = do
 
 postUser :: Handler b UserController ()
 postUser = do 
-    --readRequestBody <size>
     maybeUsername <- getParam "username"
     maybePassword <- getPostParam "password"
 
@@ -92,23 +83,34 @@ postUser = do
         password = fromMaybe "" maybePassword
 
     users <- query "SELECT * FROM users WHERE username = ?" (Only username)
-    let anyMatches = Prelude.null users
 
-    if Prelude.null users
-        then do 
-            execute "INSERT INTO users (username, password) VALUES (?, ?)" [username, password]
-            modifyResponse $ setResponseCode 201
+    if Prelude.null $ (users :: [User])
+        then do
+            let maybeHashed = hash password
+            case maybeHashed of 
+                Just hashed -> do
+                    execute "INSERT INTO users (username, password) VALUES (?, ?)" [username, hashed]
+                    modifyResponse $ setResponseCode 201
+                    writeText (jwtSigned username)
+                Nothing -> do
+                    modifyResponse $ setResponseCode 500
+                    writeBS "Error hashing password"
         else do 
-            modifyResponse $ setResponseCode 400
+            modifyResponse $ setResponseCode 403
+            writeLBS "User already exists"
 
-    --I simply dont understand why I need to write this for it to work
-    modifyResponse $ setHeader "Content-Type" "application/json"
-    writeLBS . encode $ (users :: [User])
+--------------------------------------------------------
 
+sampleAuthenticatedMethod :: Handler b UserController ()
+sampleAuthenticatedMethod = do
+    writeLBS "You are logged in!"
+
+--------------------------------------------------------
 
 userControllerInit :: Snaplet Postgres -> SnapletInit b UserController
 userControllerInit db = makeSnaplet "users" "User Controller" Nothing $ do
     addRoutes apiRoutes
+    addRoutes authRoutes
     return $ UserController db
 
 
