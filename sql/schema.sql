@@ -7,7 +7,7 @@ CREATE TABLE users(
 
 CREATE TABLE persons(
    id serial PRIMARY KEY,
-   family_tree_id int NOT NULL,
+   family_tree_id int NOT NULL REFERENCES family_trees(id),
    level int NOT NULL,
    name VARCHAR (50) NOT NULL,
    last_name VARCHAR (50) NOT NULL,
@@ -25,4 +25,9 @@ CREATE TABLE parent_relation(
    id serial PRIMARY KEY,
    descendant_id bigint NOT NULL REFERENCES persons(id),
    parent_id bigint NOT NULL REFERENCES persons(id)
+);
+
+CREATE TABLE family_trees(
+	id serial PRIMARY KEY,
+	name text
 );

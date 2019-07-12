@@ -1,32 +1,42 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveGeneric #-}
+
+
+module FamilyTree where
+
+
 import qualified Data.Set as Set
 import Prelude
 import Data.Time.Clock
 import Data.Time.Calendar
 import Data.Time
 import Data.List
+import GHC.Generics
+import Data.Text
 
 
 
-data Person = Ps Id Name LastName BirthDate Age HairColor EyeColor SkinColor Dead DeathDate DeathPlace  Profession [Deseases] deriving (Show , Eq, Ord)
-data PersonWithParents = PsP Person [Int] deriving (Show , Eq, Ord)
+data Person = Ps Id Name LastName BirthDate Age HairColor EyeColor SkinColor Dead DeathDate DeathPlace  Profession [Deseases] deriving (Show , Eq, Ord, Generic)
+data PersonWithParents = PsP Person [Int] deriving (Show , Eq, Ord, Generic)
 
 type Id = Int
-type Name = String
-type LastName = String
-type BirthDate = String
+type Name = Text
+type LastName = Text
+type BirthDate = Text
 type Age = Int
-type DeathDate = String
+type DeathDate = Maybe Text
 type Dead = Bool
-type DeathPlace = String
-type Profession = String
-data HairColor = Blonde | BrownHair | BlackHair | Red deriving (Show , Eq, Ord)
-data EyeColor = Green | Blue | Brown | Black deriving (Show , Eq, Ord)
-data SkinColor = LightSkin | DarkSkin deriving (Show , Eq, Ord)
-data Deseases = Cancer | Diabetes | Celiac deriving (Show , Eq, Ord)
+type DeathPlace = Maybe Text
+type Profession = Maybe Text
+data HairColor = Blonde | BrownHair | BlackHair | Red deriving (Show , Eq, Ord, Generic)
+data EyeColor = Green | Blue | Brown | Black deriving (Show , Eq, Ord, Generic)
+data SkinColor = LightSkin | DarkSkin deriving (Show , Eq, Ord, Generic)
+data Deseases = Cancer | Diabetes | Celiac deriving (Show , Eq, Ord, Generic)
 
 
 
-data FamilyTree = Ft [(Int,[PersonWithParents])] deriving (Show , Eq, Ord)
+data FamilyTree = Ft [(Int,[PersonWithParents])] deriving (Show , Eq, Ord, Generic)
 
 filterByName name (Ps _ n _ _ _  _ _ _ _ _ _ _ _ ) = n == name
 filterByLastName lastname (Ps _ _ l _ _ _ _ _ _ _ _ _ _) = l == lastname
@@ -111,12 +121,12 @@ markAsParent  ((l, ps) : lvls) parentId descendantId =
               Nothing  -> ((l,ps) : (markAsParent lvls parentId descendantId))
               Just newPs -> ((l,newPs) : lvls)
 
-nicolas = (Ps 0 "Nicolas" "Marcantonio" "14/06/1996" 23 BlackHair Brown DarkSkin False "" "" "Engineer" [])
-patricia = (Ps 1 "Patricia" "Ruiz" "10/03/1956" 63 BrownHair Brown LightSkin False "" "" "Accountant" (Cancer:[]))
-sergio = (Ps 2 "Sergio" "Marcantonio" "09/11/1961" 57 BlackHair Green LightSkin False "" "" "Veterinarian" [])
-joaquin = (Ps 3 "Joaquin" "Marcantonio" "19/12/1997" 21 BlackHair Brown DarkSkin False "" "" "Student" [])
-antonia = (Ps 4 "Antonia" "Perez" "12/06/1926" 93 BlackHair Brown LightSkin False "" "" "Teacher" [])
+nicolas = (Ps 0 "Nicolas" "Marcantonio" "14/06/1996" 23 BlackHair Brown DarkSkin False Nothing Nothing (Just "Engineer") [])
+patricia = (Ps 1 "Patricia" "Ruiz" "10/03/1956" 63 BrownHair Brown LightSkin False Nothing Nothing (Just "Accountant") (Cancer:[]))
+sergio = (Ps 2 "Sergio" "Marcantonio" "09/11/1961" 57 BlackHair Green LightSkin False Nothing Nothing (Just "Veterinarian") [])
+joaquin = (Ps 3 "Joaquin" "Marcantonio" "19/12/1997" 21 BlackHair Brown DarkSkin False Nothing Nothing (Just "Student") [])
+antonia = (Ps 4 "Antonia" "Perez" "12/06/1926" 93 BlackHair Brown LightSkin False Nothing Nothing (Just "Teacher") [])
 
-luis = (Ps 5 "Luis" "Marcantonio" "06/08/1930" 88 BlackHair Brown LightSkin False "" "" "Banker" [])
+luis = (Ps 5 "Luis" "Marcantonio" "06/08/1930" 88 BlackHair Brown LightSkin False Nothing Nothing (Just "Banker") [])
 
 nicolasFamilyTreeDB = markAsParentInTree (addToLevel (addToLevel (Ft []) nicolas 0) sergio (-1)) 2 0
