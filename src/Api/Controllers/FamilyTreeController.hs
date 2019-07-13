@@ -64,9 +64,15 @@ getFamilyTreeById = do
     maybeId <- getParam "id"
     let id = fromMaybe "" maybeId
     persons <- query "SELECT * FROM persons WHERE family_tree_id = ?" (Only id)
-    parentRelations <- query "SELECT * FROM parent_relation where descendant_id in (SELECT unnest(?))"  (Only ( PGArray {fromPGArray =  (getIds persons)}))
-    modifyResponse $ setHeader "Content-Type" "application/json"
-    writeLBS . encode $ ( (addRelations parentRelations (generateFromPersons persons (Ft []))) :: FamilyTree)
+    if Prelude.null $ (persons :: [DBPerson])
+        then do
+            modifyResponse $ setResponseCode 404
+            writeLBS "Not found"
+        else do
+            parentRelations <- query "SELECT * FROM parent_relation where descendant_id in (SELECT unnest(?))"  (Only ( PGArray {fromPGArray =  (getIds persons)}))
+            modifyResponse $ setHeader "Content-Type" "application/json"
+            writeLBS . encode $ ( (addRelations parentRelations (generateFromPersons persons (Ft []))) :: FamilyTree) 
+
 
 getFamilyTrees :: Handler b FamilyTreeController ()
 getFamilyTrees = do 
