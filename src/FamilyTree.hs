@@ -36,7 +36,10 @@ data Deseases = Cancer | Diabetes | Celiac deriving (Show , Eq, Ord, Generic)
 
 
 
-data FamilyTree = Ft [(Int,[PersonWithParents])] deriving (Show , Eq, Ord, Generic)
+data FamilyTree = Ft [LevelWithPersons] deriving (Show , Eq, Ord, Generic)
+
+data LevelWithPersons = Lwp (Int,[PersonWithParents]) deriving (Show , Eq, Ord, Generic)
+
 
 filterByName name (Ps _ n _ _ _  _ _ _ _ _ _ _ _ ) = n == name
 filterByLastName lastname (Ps _ _ l _ _ _ _ _ _ _ _ _ _) = l == lastname
@@ -66,7 +69,7 @@ showPersonsForLevel (pP : psP) condition = checkIfBelongs (pP) condition ++ show
 
 
 showPersons (Ft []) condition = []
-showPersons (Ft ( (l,(p:ps)) : lvls)) condition = (showPersonsForLevel (p:ps) condition) ++ (showPersons (Ft lvls) condition)
+showPersons (Ft ( (Lwp (l,(p:ps))) : lvls)) condition = (showPersonsForLevel (p:ps) condition) ++ (showPersons (Ft lvls) condition)
 
 showPersonsInCommon ft ft2 =  (showPersons ft noFilter) `intersect` (showPersons ft2 noFilter)
 
@@ -74,27 +77,18 @@ isInFamilyTreeForLevel [] person =  False
 isInFamilyTreeForLevel ((PsP p r) : psP) person = p == person || isInFamilyTreeForLevel  psP person
 
 isInFamilyTree (Ft []) person = False
-isInFamilyTree (Ft ( (l,(p:ps)) : lvls)) person = (isInFamilyTreeForLevel (p:ps) person) || (isInFamilyTree (Ft lvls) person)
+isInFamilyTree (Ft ( Lwp (l,(p:ps) ) : lvls)) person = (isInFamilyTreeForLevel (p:ps) person) || (isInFamilyTree (Ft lvls) person)
 
 
 
 
 filterFamilyTreeNameSergioAge57 ft = showPersons ft (composeFilters ((filterByName "Sergio"):(filterByAge 57):[]))
 
-getLevelOfPerson [] person =  Nothing
-getLevelOfPerson ([(l, ps)]) person =  
-    let isInLevel = person `elem` (showPersonsForLevel (ps) noFilter)
-        in if isInLevel then Just l else Nothing
-getLevelOfPerson (( (l, ps) : lvls)) person = 
-    let isInLevel = person `elem` (showPersonsForLevel (ps) noFilter)
-        in if isInLevel then Just l else  (getLevelOfPerson lvls person)
 
-
-
-addToLevelWrap [] person level =  ([((level) , (PsP person []):[] )])
-addToLevelWrap (( (l,ps) : lvls)) person level = 
+addToLevelWrap [] person level =  ([(Lwp ((level) , (PsP person []):[] ))])
+addToLevelWrap (( (Lwp (l,ps)) : lvls)) person level = 
     let shouldAdd = level  ==  l 
-        in if shouldAdd then ( (l,((PsP person []):ps)) : lvls)   else ( ( (l, ps ) : (addToLevelWrap lvls person level) ) ) 
+        in if shouldAdd then ( (Lwp (l,((PsP person []):ps))) : lvls)   else ( ( (Lwp (l, ps )) : (addToLevelWrap lvls person level) ) ) 
 
 addToLevel (Ft lvls) person level = (Ft (addToLevelWrap lvls person level))
 
@@ -115,11 +109,11 @@ markAsParentInTree (Ft lvls) parentId descendantId = Ft (markAsParent lvls paren
 
 
 markAsParent [] parentId descendantId = []
-markAsParent  ((l, ps) : lvls) parentId descendantId =    
+markAsParent  ( (Lwp (l, ps)) : lvls) parentId descendantId =    
      let ans = (markAsParentAtLevel ps parentId descendantId)
         in case (ans) of 
-              Nothing  -> ((l,ps) : (markAsParent lvls parentId descendantId))
-              Just newPs -> ((l,newPs) : lvls)
+              Nothing  -> ( (Lwp (l,ps)) : (markAsParent lvls parentId descendantId))
+              Just newPs -> ( (Lwp (l,newPs)) : lvls)
 
 nicolas = (Ps 0 "Nicolas" "Marcantonio" "14/06/1996" 23 BlackHair Brown DarkSkin False Nothing Nothing (Just "Engineer") [])
 patricia = (Ps 1 "Patricia" "Ruiz" "10/03/1956" 63 BrownHair Brown LightSkin False Nothing Nothing (Just "Accountant") (Cancer:[]))

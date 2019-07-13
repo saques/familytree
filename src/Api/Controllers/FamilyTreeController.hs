@@ -38,6 +38,7 @@ apiRoutes :: [(B.ByteString, Handler b FamilyTreeController ())]
 apiRoutes =  [("/", method GET getFamilyTrees),
                 ("/:id", method GET getFamilyTreeById),
                 ("/parent-relations", method GET getParentRelations),
+                ("/:id/filter", method GET getPersonsWithFilter),
                 ("/:id/parent/:descendantId", method POST addPersonAsParent),
                 ("/:id/descendant/:parentId", method POST addPersonAsDescendant),
                 ("/:id/level", method POST addPersonToLevel),
@@ -64,6 +65,36 @@ getFamilyTreeById = do
     parentRelations <- query "SELECT * FROM parent_relation where descendant_id in (SELECT unnest(?))"  (Only ( PGArray {fromPGArray =  (getIds persons)}))
     modifyResponse $ setHeader "Content-Type" "application/json"
     writeLBS . encode $ ( (addRelations parentRelations (generateFromPersons persons (Ft []))) :: FamilyTree)
+
+getPersonsWithFilter :: Handler b FamilyTreeController ()
+getPersonsWithFilter = do 
+    maybeFamilyTreeId <- getParam "id"
+    maybeName <- getQueryParam "name"
+    maybeLastName <- getQueryParam "lastName"
+    maybeHairColor <- getQueryParam "hairColor"
+    maybeEyeColor <- getQueryParam "eyeColor"
+    maybeSkinColor <- getQueryParam "skinColor"
+    maybeDeathPlace <- getQueryParam "deathPlace"
+    maybeProfession <- getQueryParam "profession"
+    maybeDesease <- getQueryParam "desease"
+    maybeAge <- getQueryParam "age"
+
+
+
+    let familyTreeId = fromMaybe "" maybeFamilyTreeId
+        name = fromMaybe "" maybeName
+        lastName = fromMaybe "" maybeLastName
+        hairColor = fromMaybe "" maybeHairColor
+        eyeColor = fromMaybe "" maybeEyeColor
+        skinColor = fromMaybe "" maybeSkinColor
+        deathPlace = fromMaybe "" maybeDeathPlace
+        profession = fromMaybe "" maybeProfession
+        desease = fromMaybe "" maybeDesease
+        age = fromMaybe "" maybeAge
+
+    persons <- query "SELECT * FROM persons WHERE family_tree_id = ? and name=?" (familyTreeId, name)
+    modifyResponse $ setHeader "Content-Type" "application/json"
+    writeLBS . encode $ ( persons :: [DBPerson] )
 
 getFamilyTrees :: Handler b FamilyTreeController ()
 getFamilyTrees = do 

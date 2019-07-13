@@ -62,11 +62,23 @@ instance FromRow DBPerson where
                        <*> field
                        <*> field
 
+instance ToJSON DBPerson where
+    toJSON (DBPerson id ftId level name lastname bd hc ec sc dp dd  pr dss) = object [ "id" .= id, "name" .= name ,"lastname".= lastname, "birthDate" .= bd,  "hairColor" .= hc,  "eyeColor" .= ec, "skinColor" .= sc]
+
+instance FromJSON DBPerson where
+    parseJSON = genericParseJSON defaultOptions
 
 instance ToJSON FamilyTree where
     toJSON (Ft lvls) = object [ "lvls" .= lvls]
 
 instance FromJSON FamilyTree where
+    parseJSON = genericParseJSON defaultOptions  
+
+
+instance ToJSON LevelWithPersons where
+    toJSON (Lwp (lvl,ps)) = object [ "level" .= lvl , "persons" .= ps]
+
+instance FromJSON LevelWithPersons where
     parseJSON = genericParseJSON defaultOptions   
 
 
@@ -153,4 +165,7 @@ instance ToJSON ParentRelation where
     toJSON (ParentRelation id descendant parent) = object [ "descendant" .= descendant, "parent" .= parent ]
 
 instance FromJSON ParentRelation where
-    parseJSON = genericParseJSON defaultOptions  
+    parseJSON = genericParseJSON defaultOptions
+
+
+
