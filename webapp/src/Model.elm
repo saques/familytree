@@ -19,6 +19,8 @@ import Bootstrap.Utilities.Spacing as Spacing
 import Bootstrap.Utilities.Flex as Flex
 import Http exposing (..)
 
+import Dto.FamilyTreeDto exposing (..)
+
 api : String
 api =
     "http://localhost:9000/api/"
@@ -35,7 +37,6 @@ type alias UserLogin =
     {
         username : String ,
         password : String ,
-        userError : String ,
         token : String , 
         isLoggedIn : Bool
     }
@@ -46,22 +47,20 @@ setUsername s u = {u | username = s}
 setPassword : String -> UserLogin -> UserLogin
 setPassword s u = {u | password = s}
 
-setUserError : String -> UserLogin -> UserLogin
-setUserError s u = {u | userError = s}
-
 setToken : String -> UserLogin -> UserLogin
-setToken s u = {u | token = s, isLoggedIn = True, userError = ""}
+setToken s u = {u | token = s, isLoggedIn = True}
 
 isLoggedIn : Model -> Bool 
 isLoggedIn model = model.userLogin.isLoggedIn
 
 logOut : UserLogin -> UserLogin
-logOut u = UserLogin u.username u.password "" "" False
+logOut u = UserLogin u.username u.password "" False
 
 type Page
     = Home
     | MainPage
     | NotFound
+    | FamilyTree
 
 
 type alias Flags =
@@ -72,9 +71,9 @@ type alias Model =
     , page : Page
     , navState : Navbar.State
     , modalVisibility : Modal.Visibility
-    , counter : Int
-    , authenticatedMessage : String
     , userLogin : UserLogin
+    , ftName : String
+    , globalError : String
     }
 
 type Msg
@@ -83,12 +82,13 @@ type Msg
     | NavMsg Navbar.State
     | CloseModal
     | ShowModal
-    | IncrementCounter
-    | GetAuthSample
-    | GotAuthSample (Result Http.Error (String))
     | SetUsername String
     | SetPassword String
     | CreateUser
     | Login
     | Logout
     | ResponseLoginRegister String (Result Http.Error (String))
+    | SetFtName String
+    | CreateFamilyTree
+    | ResponseCreateFamilyTree (Result Http.Error (List ResponseId))
+    | Goto Page

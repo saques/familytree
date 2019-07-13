@@ -12,7 +12,7 @@ navbar model =
     Navbar.config NavMsg
         |> Navbar.withAnimation
         |> Navbar.container
-        |> Navbar.brand [ href "#" ] [ text "Elm Bootstrap" ]
+        |> Navbar.brand [ href "#", onClick (Goto Home) ] [ text "Elm Bootstrap" ]
         |> Navbar.customItems
             [ Navbar.formItem []
                 [ if not (isLoggedIn model) then

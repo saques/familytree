@@ -23,7 +23,7 @@ modal model =
                         [ Form.group []
                             [ Form.label [for "username"] [ text "User name"]
                             , Input.text [ Input.id "username", Input.onInput SetUsername ]
-                            , Form.help [] [ text model.userLogin.userError ]
+                            , Form.help [] [ text model.globalError ]
                             ]
                         , Form.group []
                             [ Form.label [for "mypwd"] [ text "Password"]
