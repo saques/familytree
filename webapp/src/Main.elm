@@ -18,34 +18,18 @@ import Http exposing (..)
 import Json.Decode exposing (Decoder, map2, list, field, string, int)
 
 import Model exposing (..)
-import Snippets.LoginModal exposing (..)
-import Snippets.Navbar exposing (..)
-import Snippets.Home exposing (..)
-import Snippets.MainPage exposing (..)
 import HttpHelper exposing (..)
 import Utils exposing (..)
 
 import Requests.LoginAndRegister exposing (..)
+import Requests.FamilyTree.Crud exposing (..)
 
-userListDecoder : Decoder (List User)
-userListDecoder =
-  list userDecoder
+import Snippets.LoginModal exposing (..)
+import Snippets.Navbar exposing (..)
+import Snippets.Home exposing (..)
+import Snippets.MainPage exposing (..)
+import Snippets.FamilyTree exposing (..)
 
-
-userDecoder : Decoder User
-userDecoder = 
-    map2 User
-        (field "name" string)
-        (field "id" int)
-
-{-
-getUsers : Cmd Msg
-getUsers =
-  Http.get
-    { url = api ++ "users"
-    , expect = Http.expectJson GotUser userListDecoder
-    }
--}
 
 -------------------------------------------------------------------
 
@@ -72,9 +56,9 @@ init flags url key =
                             navState = navState, 
                             page = Home, 
                             modalVisibility = Modal.hidden, 
-                            counter = 0, 
-                            authenticatedMessage = "Nothing", 
-                            userLogin = UserLogin "" "" "" "" False }
+                            userLogin = UserLogin "" "" "" False,
+                            ftName = "",
+                            globalError = "" }
     in
         ( model, Cmd.batch [ urlCmd, navCmd ] )
 
@@ -91,13 +75,14 @@ update msg model =
              case req of
                  Browser.Internal url ->
                      ( model, Navigation.pushUrl model.navKey <| Url.toString url )
-
                  Browser.External href ->
                      ( model, Navigation.load href )
 
-
         UrlChange url ->
-            urlUpdate url model
+            --urlUpdate url model
+            (model, Cmd.none)
+
+        Goto page -> ({model | page = page}, Cmd.none)
 
         NavMsg state ->
             ( { model | navState = state }
@@ -114,23 +99,6 @@ update msg model =
             , Cmd.none
             )
 
-        IncrementCounter ->
-            ( { model | counter = model.counter + 1 }
-            , Cmd.none
-            )
-
-        GetAuthSample -> (model, testAuthenticatedMethod model)
-
-        GotAuthSample result ->
-            case result of
-                Ok r ->
-                    ( { model | authenticatedMessage = r }
-                    , Cmd.none
-                    )
-
-                Err _ ->
-                    (model, Cmd.none)
-
         SetUsername e ->
             ( { model | userLogin = setUsername e model.userLogin }, Cmd.none)
 
@@ -144,16 +112,30 @@ update msg model =
                 Ok t -> (
                       {model | userLogin = setToken t model.userLogin, 
                                modalVisibility = Modal.hidden,
+                               globalError = "",
                                --Go to main page
-                               page = MainPage}, Cmd.none)
+                               page = MainPage }, Cmd.none)
 
                 Err e -> (
-                    { model | userLogin = setUserError message model.userLogin}
+                    { model | globalError = message }
                     , Cmd.none )
 
         Login -> (model, loginUser model)
 
-        Logout -> ({model | userLogin = logOut model.userLogin, page = Home}, Cmd.none)
+        Logout -> ({model | userLogin = logOut model.userLogin, 
+                            page = Home,
+                            globalError = "" }, Cmd.none)
+
+        SetFtName name -> ( { model | ftName = name }, Cmd.none)
+
+        CreateFamilyTree -> (model, createFamilyTree model)
+
+        ResponseCreateFamilyTree result ->
+            case result of
+                Ok id -> ( { model | page = FamilyTree,
+                                     globalError = "" }, Cmd.none)
+                Err _ -> ( { model | globalError = "Error creating family tree " ++ model.ftName }
+                            , Cmd.none )
                     
 
 
@@ -163,7 +145,7 @@ update msg model =
 
 urlUpdate : Url -> Model -> ( Model, Cmd Msg )
 urlUpdate url model =
-    case decode url of
+    case decode url model of
         Nothing ->
             ( { model | page = NotFound }, Cmd.none )
 
@@ -171,14 +153,14 @@ urlUpdate url model =
             ( { model | page = route }, Cmd.none )
 
 
-decode : Url -> Maybe Page
-decode url =
+decode : Url -> Model-> Maybe Page
+decode url model =
     { url | path = Maybe.withDefault "" url.fragment, fragment = Nothing }
-    |> UrlParser.parse routeParser
+    |> UrlParser.parse (routeParser model)
 
 
-routeParser : Parser (Page -> a) a
-routeParser =
+routeParser : Model -> Parser (Page -> a) a
+routeParser model =
     UrlParser.oneOf
         [ UrlParser.map Home top
         , UrlParser.map MainPage (s "main-page")
@@ -210,6 +192,9 @@ mainContent model =
 
             NotFound ->
                 pageNotFound
+
+            FamilyTree ->
+                ftView model
 
 
 pageNotFound : List (Html Msg)

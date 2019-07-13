@@ -34,15 +34,18 @@ data FamilyTreeController = FamilyTreeController
 
 makeLenses ''FamilyTreeController
 
+
+
 apiRoutes :: [(B.ByteString, Handler b FamilyTreeController ())]
-apiRoutes =  [("/", method GET getFamilyTrees),
+apiRoutes = Prelude.map (mapSecond (authenticate >>))
+            [("/", method GET getFamilyTrees),
                 ("/:id", method GET getFamilyTreeById),
                 ("/parent-relations", method GET getParentRelations),
                 ("/:id/filter", method GET getPersonsWithFilter),
                 ("/:id/parent/:descendantId", method POST addPersonAsParent),
                 ("/:id/descendant/:parentId", method POST addPersonAsDescendant),
                 ("/:id/level", method POST addPersonToLevel),
-                ("/create", method POST createFamilyTree)]
+                ("/:name", method POST createFamilyTree)]
 
 generateFromPersons :: [DBPerson] -> FamilyTree -> FamilyTree
 generateFromPersons [] ft = ft
@@ -62,9 +65,15 @@ getFamilyTreeById = do
     maybeId <- getParam "id"
     let id = fromMaybe "" maybeId
     persons <- query "SELECT * FROM persons WHERE family_tree_id = ?" (Only id)
-    parentRelations <- query "SELECT * FROM parent_relation where descendant_id in (SELECT unnest(?))"  (Only ( PGArray {fromPGArray =  (getIds persons)}))
-    modifyResponse $ setHeader "Content-Type" "application/json"
-    writeLBS . encode $ ( (addRelations parentRelations (generateFromPersons persons (Ft []))) :: FamilyTree)
+    if Prelude.null $ (persons :: [DBPerson])
+        then do
+            modifyResponse $ setResponseCode 404
+            writeLBS "Not found"
+        else do
+            parentRelations <- query "SELECT * FROM parent_relation where descendant_id in (SELECT unnest(?))"  (Only ( PGArray {fromPGArray =  (getIds persons)}))
+            modifyResponse $ setHeader "Content-Type" "application/json"
+            writeLBS . encode $ ( (addRelations parentRelations (generateFromPersons persons (Ft []))) :: FamilyTree) 
+
 
 getPersonsWithFilter :: Handler b FamilyTreeController ()
 getPersonsWithFilter = do 
@@ -221,13 +230,19 @@ addPersonToLevel = do
 
 createFamilyTree :: Handler b FamilyTreeController ()
 createFamilyTree = do 
-    maybeName <- getPostParam "name"
-
+    maybeName <- getParam "name"
     let  name = fromMaybe "" maybeName
-    do
-    familyTreeId <- query "INSERT INTO family_trees (name) VALUES (?) returning id" (Only name)
-    modifyResponse $ setResponseCode 201
-    writeLBS . encode $ ( familyTreeId :: [ResponseId] )
+    ids <- query "SELECT id FROM family_trees WHERE name = ?" (Only name)
+
+    if Prelude.null $ (ids :: [ResponseId])
+        then do
+            familyTreeId <- query "INSERT INTO family_trees (name) VALUES (?) returning id" (Only name)
+            modifyResponse $ setResponseCode 201
+            writeLBS . encode $ (familyTreeId :: [ResponseId])
+        else do 
+            modifyResponse $ setResponseCode 403
+            writeLBS . encode $ (ids :: [ResponseId])
+
 
 familyTreeControllerInit :: Snaplet Postgres -> SnapletInit b FamilyTreeController
 familyTreeControllerInit db = makeSnaplet "persons" "Family Tree Controller" Nothing $ do
