@@ -46,7 +46,11 @@ data DBPerson = DBPerson
     , profession :: Maybe Text
     , deseases :: Maybe Text
     , age :: Int
-   } deriving (Generic , Eq)
+   } deriving (Generic )
+
+instance Eq DBPerson where
+    (DBPerson id ftId l fn ln bd hc ec sc dd dp pr dss age) == (DBPerson id2 ftId2 l2 fn2 ln2 bd2 hc2 ec2 sc2 dd2 dp2 pr2 dss2 age2) =  (ftId == ftId2 && id == id2 && ftId == ftId2 && l == l2 && fn==fn2  && ln == ln2 && bd == bd2  && hc==hc2 && ec==ec2 && sc == sc2 && dd==dd2 && dp==dp2  && pr==pr2 && dss==dss2 && age==age2) || (fn == fn2 && ln == ln2 && bd == bd2) 
+ 
 
 instance FromRow DBPerson where
     fromRow = DBPerson <$> field
@@ -165,6 +169,16 @@ instance ToJSON ResponseId where
 instance FromJSON ResponseId where
     parseJSON = genericParseJSON defaultOptions  
 
+
+data FamilyTreeIdAndLevel = FamilyTreeIdAndLevel 
+  { personFtId :: Int
+    , personLvl :: Int
+  } deriving Generic
+
+instance FromRow FamilyTreeIdAndLevel where
+    fromRow = FamilyTreeIdAndLevel <$> field
+                                    <*> field
+    
 data ParentRelation = ParentRelation 
 	{ prid :: Int
 	, descendantid :: Int
@@ -205,3 +219,21 @@ instance ToJSON FilteredPerson where
 
 instance FromJSON FilteredPerson where
     parseJSON = genericParseJSON defaultOptions
+
+
+data IdAndFullNamePerson = IdAndFullNamePerson 
+    { pId2 :: Int
+    , firstname2 :: Text
+    , lastName2 :: Text
+   } deriving (Generic , Eq)
+
+instance ToJSON IdAndFullNamePerson where
+    toJSON (IdAndFullNamePerson id name lastname) = object [ "id" .= id, "name" .= name ,"lastname".= lastname]
+
+instance FromJSON IdAndFullNamePerson where
+    parseJSON = genericParseJSON defaultOptions
+
+instance FromRow IdAndFullNamePerson where
+fromRow = IdAndFullNamePerson <$> field
+                   <*> field
+                   <*> field
