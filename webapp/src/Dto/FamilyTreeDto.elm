@@ -7,6 +7,7 @@ import HttpHelper exposing (..)
 import Dict
 import List exposing (..)
 import Json.Decode as D
+import Json.Decode.Extra as DE
 
 type alias ResponseId = 
     { id : Int
@@ -138,18 +139,16 @@ type alias Person =
     , birthDate : String
     }
 
---Todo: max is 8, enlargement needed
 personDecoder : D.Decoder Person
 personDecoder = 
-    D.map8
-        Person
-        (D.field "hairColor" D.string)
-        (D.field "skinColor" D.string)
-        (D.field "lastname" D.string)
-        (D.field "age" D.int)
-        (D.field "eyeColor" D.string)
-        (D.field "name" D.string)
-        (D.field "id" D.int)
-        (D.field "birthDate" D.string)
+    D.succeed Person
+        |> DE.andMap (D.field "hairColor" D.string)
+        |> DE.andMap (D.field "skinColor" D.string)
+        |> DE.andMap (D.field "lastname" D.string)
+        |> DE.andMap (D.field "age" D.int)
+        |> DE.andMap (D.field "eyeColor" D.string)
+        |> DE.andMap (D.field "name" D.string)
+        |> DE.andMap (D.field "id" D.int)
+        |> DE.andMap (D.field "birthDate" D.string)
 
 
