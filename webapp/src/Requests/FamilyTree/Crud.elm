@@ -15,7 +15,7 @@ createFamilyTree model =
   Http.request
     { method = "POST"
     , headers = [(Http.header "Token" model.userLogin.token)]
-    , url = api ++ "family-tree/" ++ model.ftName
+    , url = api ++ "family-tree/" ++ model.ftData.name
     , body = Http.emptyBody
     , expect = Http.expectJson (ResponseGetFTId "Could not create family tree: ") responseIdListDecoder
     , timeout = Nothing
@@ -39,7 +39,7 @@ getFamilyTreeByName model =
   Http.request
     { method = "GET"
     , headers = [(Http.header "Token" model.userLogin.token)]
-    , url = api ++ "family-tree/name/" ++ model.ftName
+    , url = api ++ "family-tree/name/" ++ model.ftData.name
     , body = Http.emptyBody
     , expect = Http.expectJson (ResponseGetFTId "Tree does not exist: ") responseIdListDecoder
     , timeout = Nothing

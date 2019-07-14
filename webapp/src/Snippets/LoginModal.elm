@@ -11,6 +11,10 @@ import Bootstrap.Form as Form
 import Bootstrap.Form.Input as Input
 import Bootstrap.Button as Button
 
+import Bootstrap.Grid.Row as Row
+import Bootstrap.Grid.Col as Col
+import Bootstrap.Text as Text
+
 modal : Model -> Html Msg
 modal model =
     Modal.config CloseModal
@@ -31,11 +35,11 @@ modal model =
                             ]
                         , Form.row []
                             [
-                                Form.col []
+                                Form.col [Col.textAlign Text.alignSmRight]
                                 [
                                     Button.button [ Button.secondary, Button.attrs [onClick CreateUser] ][ text "Sign in" ]
                                 ],
-                                Form.col []
+                                Form.col [Col.textAlign Text.alignSmLeft]
                                 [
                                     Button.button [ Button.primary, Button.attrs [onClick Login] ][ text "Log in" ]
                                 ]

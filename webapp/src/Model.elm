@@ -17,6 +17,7 @@ import Bootstrap.ListGroup as Listgroup
 import Bootstrap.Modal as Modal
 import Bootstrap.Utilities.Spacing as Spacing
 import Bootstrap.Utilities.Flex as Flex
+import Bootstrap.Accordion as Accordion
 import Http exposing (..)
 
 import Dto.FamilyTreeDto exposing (..)
@@ -40,6 +41,40 @@ type alias UserLogin =
         token : String , 
         isLoggedIn : Bool
     }
+
+type alias FTData =
+    {
+        name : String,
+        id : Int,
+        ft : Maybe FamilyTree,
+        currLevel : Int,
+        left : Maybe ByLevel,
+        mid : Maybe ByLevel,
+        right : Maybe ByLevel
+    }
+
+ftDataInit : FTData
+ftDataInit = FTData "" 0 Nothing 0 Nothing Nothing Nothing
+
+ftDataSetName : String -> FTData -> FTData
+ftDataSetName s d = {d | name = s}
+
+ftDataSetId : Int -> FTData -> FTData
+ftDataSetId i d = {d | id = i}
+
+ftDataSetFT : FamilyTree -> FTData -> FTData
+ftDataSetFT f d = {d | ft = Just f,
+                       left = ftGetByLevelMaybe d.currLevel (Just f),
+                       mid = ftGetByLevelMaybe (d.currLevel-1) (Just f),
+                       right = ftGetByLevelMaybe (d.currLevel-2) (Just f)}
+
+offsetLevel : Int -> FTData -> FTData
+offsetLevel i d = {d | currLevel = d.currLevel + i,
+                       left = ftGetByLevelMaybe (d.currLevel+i) d.ft,
+                       mid = ftGetByLevelMaybe (d.currLevel+i-1) d.ft,
+                       right = ftGetByLevelMaybe (d.currLevel+i-2) d.ft}
+
+
 
 setUsername : String -> UserLogin -> UserLogin
 setUsername s u = {u | username = s}
@@ -67,19 +102,20 @@ type alias Flags =
     {}
 
 type alias Model =
-    { navKey : Navigation.Key
+    { accordionState : Accordion.State
+    , navKey : Navigation.Key
     , page : Page
     , navState : Navbar.State
     , modalVisibility : Modal.Visibility
     , userLogin : UserLogin
-    , ftName : String
     , globalError : String
-    , currentFamilyTree : Maybe FamilyTree
+    , ftData : FTData
     }
 
 type Msg
     = UrlChange Url
     | ClickedLink UrlRequest
+    | AccordionMsg Accordion.State
     | NavMsg Navbar.State
     | CloseModal
     | ShowModal
@@ -95,3 +131,4 @@ type Msg
     | ResponseGetFamilyTreeById (Result Http.Error FamilyTree)
     | Goto Page
     | LoadFamilyTree
+    | OffsetLevel Int

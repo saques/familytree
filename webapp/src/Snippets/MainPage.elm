@@ -13,16 +13,29 @@ import Bootstrap.Grid.Row as Row
 import Bootstrap.Form as Form
 import Bootstrap.Form.Input as Input
 import Bootstrap.Button as Button
+import Bootstrap.Text as Text
 
 pageMain : Model -> List (Html Msg)
 pageMain model =
-    [ h3 [] [ text "Welcome to Familytree!" ]
-    , Grid.containerFluid[]
+    [Grid.containerFluid []
         [
-            h4 [] [ text model.globalError ],
+            Grid.row[]
+            [
+                Grid.col[Col.textAlign Text.alignMdCenter]
+                [
+                    h4 [] [ text "Welcome to FamilyTree!" ]
+                ]
+            ],
             Grid.row []
             [
-                Grid.col[]
+                Grid.col[Col.textAlign Text.alignMdCenter]
+                [
+                    h6 [] [ text model.globalError ]
+                ]
+            ],
+            Grid.row []
+            [
+                Grid.col[Col.textAlign Text.alignMdCenter]
                 [
                     Form.form []
                     [ Form.group []
@@ -35,7 +48,7 @@ pageMain model =
                         [ text "Create family tree" ]
                     ] 
                 ] ,
-                Grid.col[]
+                Grid.col[Col.textAlign Text.alignMdCenter]
                 [
                     Form.form []
                     [ Form.group []
@@ -51,3 +64,4 @@ pageMain model =
             ]
         ]
     ]
+    
