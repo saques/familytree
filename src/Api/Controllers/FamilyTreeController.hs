@@ -8,6 +8,7 @@ module Api.Controllers.FamilyTreeController (
     ) where
 
 import Api.Types (DBPerson(DBPerson))
+import Api.Types (FilteredPerson(FilteredPerson))
 import Api.Types (FamilyTreeData(FamilyTreeData))
 import Api.Types (ResponseId(ResponseId))
 import Api.Types (ParentRelation(ParentRelation))
@@ -21,6 +22,9 @@ import Control.Monad.State.Class (get)
 import Data.Aeson (encode)
 import FamilyTree
 import Database.PostgreSQL.Simple.Types
+import Data.List
+import Data.Text
+import Data.Char
 
 import Data.Maybe
 import Data.ByteString.Lazy
@@ -50,11 +54,46 @@ apiRoutes = Prelude.map (mapSecond (authenticate >>))
 
 generateFromPersons :: [DBPerson] -> FamilyTree -> FamilyTree
 generateFromPersons [] ft = ft
-generateFromPersons ( (DBPerson id ftId l fn ln bd hc ec sc dd dp pr dss) :ps) ft =  generateFromPersons ps (addToLevel ft (Ps id fn ln bd 12 Blonde Brown DarkSkin False dd dp pr (Cancer:[])) l) 
+generateFromPersons ( (DBPerson id ftId l fn ln bd hc ec sc dd dp pr dss age) :ps) ft =  generateFromPersons ps (addToLevel ft (Ps id fn ln bd age (getHairColor hc) (getEyeColor ec)  (getSkinColor sc)  False dd dp pr (getDeseases (show dss))) l) 
+
+getDeseases :: [Char] -> [Deseases]
+getDeseases "}" = []
+getDeseases (x:xs) = if ((isDigit x) == False) then (getDeseases xs) else (getDesease (digitToInt  x)) : (getDeseases xs)
+getDeseases a = []
+
+
+getHairColor :: Text -> HairColor
+getHairColor "Rubio" = Blonde
+getHairColor "Castaño" = BrownHair
+getHairColor "Morocho" = BlackHair
+getHairColor "Colorado" = Red
+getHairColor "Blanco" = White
+getHairColor a = IncorrectHairColor
+
+getEyeColor :: Text -> EyeColor
+getEyeColor "Verdes" = Green
+getEyeColor "Azules" = Blue
+getEyeColor "Marrones" = Brown
+getEyeColor "Negros" = Black
+getEyeColor a = IncorrectEyeColor
+
+getSkinColor :: Text -> SkinColor
+getSkinColor "Clara" = LightSkin
+getSkinColor "Oscura" = DarkSkin
+getSkinColor a = IncorrectSkinColor
+
+
+getDesease :: Int -> Deseases
+getDesease 0 = Cancer
+getDesease 1 = Diabetes
+getDesease 2 = Leukemia
+getDesease a = IncorrectDesease
+
+
 
 getIds :: [DBPerson] -> [Int]
 getIds [] = []
-getIds ( (DBPerson id _ _ _ _ _ _ _ _ _ _ _ _) :ps) =  id : (getIds ps)
+getIds ( (DBPerson id _ _ _ _ _ _ _ _ _ _ _ _ _ ) :ps) =  id : (getIds ps)
 
 addRelations :: [ParentRelation] -> FamilyTree -> FamilyTree
 addRelations [] ft = ft
@@ -72,7 +111,7 @@ getFamilyTreeById = do
             writeLBS "Not found"
         else do
             modifyResponse $ setHeader "Content-Type" "application/json"
-            persons <- query "SELECT * FROM persons WHERE family_tree_id = ?" (Only id)
+            persons <- query "SELECT id, family_tree_id,level,name,last_name,birth_date,hair_color,eye_color,skin_color, death_date, death_place, profession, deseases::text,extract (year from AGE(current_date,TO_DATE(birth_date, 'DD/MM/YYYY')))::int FROM persons WHERE family_tree_id = ?" (Only id)    
             if Prelude.null $ (persons :: [DBPerson])
                 then do
                     writeLBS . encode $ ( (addRelations [] (generateFromPersons persons (Ft []))) :: FamilyTree) 
@@ -95,7 +134,6 @@ getPersonsWithFilter = do
     maybeAge <- getQueryParam "age"
 
 
-
     let familyTreeId = fromMaybe "" maybeFamilyTreeId
         name = fromMaybe "" maybeName
         lastName = fromMaybe "" maybeLastName
@@ -107,9 +145,18 @@ getPersonsWithFilter = do
         desease = fromMaybe "" maybeDesease
         age = fromMaybe "" maybeAge
 
-    persons <- query "SELECT * FROM persons WHERE family_tree_id = ? and name=?" (familyTreeId, name)
+    persons <- query   "SELECT id, family_tree_id,level,name,last_name,birth_date,hair_color,eye_color,skin_color, death_date, death_place, profession, deseases::text ,extract (year from AGE(current_date,TO_DATE(birth_date, 'DD/MM/YYYY')))::int  FROM persons WHERE family_tree_id = ? and (? = '' or initcap(name) = initcap(?)) and (? = '' or initcap(last_name) = initcap(?)) and (? = '' or initcap(hair_color) = initcap(?) ) and (? = '' or initcap(eye_color) = initcap(?) ) " (familyTreeId, name, name, lastName, lastName, hairColor, hairColor, eyeColor, eyeColor) 
+    persons2 <- query   "SELECT id, family_tree_id,level,name,last_name,birth_date,hair_color,eye_color,skin_color, death_date, death_place, profession, deseases::text,extract (year from AGE(current_date,TO_DATE(birth_date, 'DD/MM/YYYY')))::int  FROM persons WHERE family_tree_id = ? and (? = '' or initcap(skin_color) = initcap(?) ) and (? = '' or initcap(death_place) = initcap(?) ) and (? = '' or initcap(profession) = initcap(?) ) and (? = '' or cast(coalesce(nullif(?,''),'-1') as float) in (select unnest(deseases))) " (familyTreeId, skinColor, skinColor, deathPlace, deathPlace, profession, profession, desease, desease) 
+    persons3 <- query   "SELECT id, family_tree_id,level,name,last_name,birth_date,hair_color,eye_color,skin_color, death_date, death_place, profession, deseases::text ,extract (year from AGE(current_date,TO_DATE(birth_date, 'DD/MM/YYYY')))::int  FROM persons WHERE family_tree_id = ? and (? = '' or cast(coalesce(nullif(?,''),'-1') as float) = (select extract (year from AGE(current_date,TO_DATE(birth_date, 'DD/MM/YYYY'))))) " (familyTreeId, age, age) 
+
     modifyResponse $ setHeader "Content-Type" "application/json"
-    writeLBS . encode $ ( persons :: [DBPerson] )
+    writeLBS . encode $ ( dbPersonToFilteredPerson ((persons `intersect` (persons2 `intersect` persons3)) :: [DBPerson]) )
+
+dbPersonToFilteredPerson  :: [DBPerson] -> [FilteredPerson]
+dbPersonToFilteredPerson [] = []
+dbPersonToFilteredPerson ( (DBPerson id ftId l fn ln bd hc ec sc dd dp pr dss age) : ps) = (FilteredPerson id ftId l fn ln bd hc ec sc dd dp pr (getDeseases (show dss)) age)  : (dbPersonToFilteredPerson ps)
+
+
 
 getFamilyTrees :: Handler b FamilyTreeController ()
 getFamilyTrees = do 
@@ -160,6 +207,7 @@ addPersonAsParent = do
         deseases = fromMaybe "" maybeDeseases
     do
     parentId <- query "INSERT INTO persons (family_tree_id,level,name,last_name,birth_date,hair_color,eye_color,skin_color, death_date, death_place) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id" (familyTreeId , level, name, lastName, birthDate, hairColor, eyeColor, skinColor, deathDate, deathPlace)
+    execute "UPDATE  persons SET deseases = ? , profession = ? where id = ? " [deseases,profession, B.pack (show (getParentIdFromQuery (parentId:: [ResponseId])))]
     execute "INSERT INTO parent_relation (descendant_id, parent_id) VALUES (?, ?) " [descendantId, B.pack (show (getParentIdFromQuery (parentId:: [ResponseId])))]
     modifyResponse $ setResponseCode 201
     writeLBS . encode $ ( parentId :: [ResponseId] )
@@ -195,6 +243,7 @@ addPersonAsDescendant = do
         deseases = fromMaybe "" maybeDeseases
     do
     descendantId <- query "INSERT INTO persons (family_tree_id,level,name,last_name,birth_date,hair_color,eye_color,skin_color, death_date, death_place) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id" (familyTreeId , level, name, lastName, birthDate, hairColor, eyeColor, skinColor, deathDate, deathPlace)
+    execute "UPDATE  persons SET deseases = ? , profession = ? where id = ? " [deseases,profession, B.pack (show (getParentIdFromQuery (descendantId:: [ResponseId])))]
     execute "INSERT INTO parent_relation (descendant_id, parent_id) VALUES (?, ?) " [B.pack (show (getParentIdFromQuery (descendantId:: [ResponseId]))), parentId]
     modifyResponse $ setResponseCode 201
     writeLBS . encode $ ( descendantId :: [ResponseId] )
@@ -230,9 +279,10 @@ addPersonToLevel = do
         profession = fromMaybe "" maybeProfession
         deseases = fromMaybe "" maybeDeseases
     do
-    parentId <- query "INSERT INTO persons (family_tree_id,level,name,last_name,birth_date,hair_color,eye_color,skin_color, death_date, death_place) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id" (familyTreeId , level, name, lastName, birthDate, hairColor, eyeColor, skinColor, deathDate, deathPlace)
+    personId <- query "INSERT INTO persons (family_tree_id,level,name,last_name,birth_date,hair_color,eye_color,skin_color, death_date, death_place) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id" (familyTreeId , level, name, lastName, birthDate, hairColor, eyeColor, skinColor, deathDate, deathPlace)
+    execute "UPDATE  persons SET deseases = ? , profession = ? where id = ? " [deseases,profession, B.pack (show (getParentIdFromQuery (personId:: [ResponseId])))]
     modifyResponse $ setResponseCode 201
-    writeLBS . encode $ ( parentId :: [ResponseId] )       
+    writeLBS . encode $ ( personId :: [ResponseId] )       
 
 createFamilyTree :: Handler b FamilyTreeController ()
 createFamilyTree = do 
