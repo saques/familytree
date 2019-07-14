@@ -183,4 +183,25 @@ instance FromJSON ParentRelation where
     parseJSON = genericParseJSON defaultOptions
 
 
+data FilteredPerson = FilteredPerson 
+    { pIdFilter :: Int
+    , familyTreeIdFilter :: Int
+    , levelFilter :: Int
+    , firstnameFilter :: Text
+    , lastNameFilter :: Text
+    , birthDateFilter :: Text
+    , hairColorFilter :: Text
+    , eyeColorFilter :: Text
+    , skinColorFilter :: Text
+    , deathDateFilter :: Maybe Text
+    , deathPlaceFilter :: Maybe Text
+    , professionFilter :: Maybe Text
+    , deseasesFilter :: [Deseases]
+    , ageFilter :: Int
+   } deriving (Generic , Eq)
 
+instance ToJSON FilteredPerson where
+    toJSON (FilteredPerson id ftId level name lastname bd hc ec sc dp dd  pr dss age) = object [ "id" .= id, "name" .= name ,"lastname".= lastname, "birthDate" .= bd,  "hairColor" .= hc,  "eyeColor" .= ec, "skinColor" .= sc , "age" .= age, "deathPlace" .= dp, "deathDate" .= dd , "profession" .= pr, "deseases" .= dss]
+
+instance FromJSON FilteredPerson where
+    parseJSON = genericParseJSON defaultOptions

@@ -8,6 +8,7 @@ module Api.Controllers.FamilyTreeController (
     ) where
 
 import Api.Types (DBPerson(DBPerson))
+import Api.Types (FilteredPerson(FilteredPerson))
 import Api.Types (FamilyTreeData(FamilyTreeData))
 import Api.Types (ResponseId(ResponseId))
 import Api.Types (ParentRelation(ParentRelation))
@@ -43,6 +44,7 @@ apiRoutes :: [(B.ByteString, Handler b FamilyTreeController ())]
 apiRoutes = Prelude.map (mapSecond (authenticate >>))
             [("/", method GET getFamilyTrees),
                 ("/:id", method GET getFamilyTreeById),
+                ("/name/:name", method GET getFamilyTreeByName),
                 ("/parent-relations", method GET getParentRelations),
                 ("/:id/filter", method GET getPersonsWithFilter),
                 ("/:id/parent/:descendantId", method POST addPersonAsParent),
@@ -102,15 +104,20 @@ getFamilyTreeById :: Handler b FamilyTreeController ()
 getFamilyTreeById = do 
     maybeId <- getParam "id"
     let id = fromMaybe "" maybeId
-    persons <- query "SELECT id, family_tree_id,level,name,last_name,birth_date,hair_color,eye_color,skin_color, death_date, death_place, profession, deseases::text,extract (year from AGE(current_date,TO_DATE(birth_date, 'DD/MM/YYYY')))::int FROM persons WHERE family_tree_id = ?" (Only id)    
-    if Prelude.null $ (persons :: [DBPerson])
+    fts <- query "SELECT id FROM family_trees WHERE id = ?" (Only id)
+    if Prelude.null $ (fts :: [ResponseId])
         then do
             modifyResponse $ setResponseCode 404
             writeLBS "Not found"
         else do
-            parentRelations <- query "SELECT * FROM parent_relation where descendant_id in (SELECT unnest(?))"  (Only ( PGArray {fromPGArray =  (getIds persons)}))
             modifyResponse $ setHeader "Content-Type" "application/json"
-            writeLBS . encode $ ( (addRelations parentRelations (generateFromPersons persons (Ft []))) :: FamilyTree) 
+            persons <- query "SELECT id, family_tree_id,level,name,last_name,birth_date,hair_color,eye_color,skin_color, death_date, death_place, profession, deseases::text,extract (year from AGE(current_date,TO_DATE(birth_date, 'DD/MM/YYYY')))::int FROM persons WHERE family_tree_id = ?" (Only id)    
+            if Prelude.null $ (persons :: [DBPerson])
+                then do
+                    writeLBS . encode $ ( (addRelations [] (generateFromPersons persons (Ft []))) :: FamilyTree) 
+                else do 
+                    parentRelations <- query "SELECT * FROM parent_relation where descendant_id in (SELECT unnest(?))"  (Only ( PGArray {fromPGArray =  (getIds persons)}))
+                    writeLBS . encode $ ( (addRelations parentRelations (generateFromPersons persons (Ft []))) :: FamilyTree) 
 
 
 getPersonsWithFilter :: Handler b FamilyTreeController ()
@@ -139,11 +146,17 @@ getPersonsWithFilter = do
         age = fromMaybe "" maybeAge
 
     persons <- query   "SELECT id, family_tree_id,level,name,last_name,birth_date,hair_color,eye_color,skin_color, death_date, death_place, profession, deseases::text ,extract (year from AGE(current_date,TO_DATE(birth_date, 'DD/MM/YYYY')))::int  FROM persons WHERE family_tree_id = ? and (? = '' or initcap(name) = initcap(?)) and (? = '' or initcap(last_name) = initcap(?)) and (? = '' or initcap(hair_color) = initcap(?) ) and (? = '' or initcap(eye_color) = initcap(?) ) " (familyTreeId, name, name, lastName, lastName, hairColor, hairColor, eyeColor, eyeColor) 
-    persons2 <- query   "SELECT id, family_tree_id,level,name,last_name,birth_date,hair_color,eye_color,skin_color, death_date, death_place, profession, deseases::text,extract (year from AGE(current_date,TO_DATE(birth_date, 'DD/MM/YYYY')))::int  FROM persons WHERE family_tree_id = ? and (? = '' or initcap(skin_color) = initcap(?) ) and (? = '' or initcap(death_place) = initcap(?) ) and (? = '' or initcap(profession) = initcap(?) ) and (? = '' or ? in (select unnest(deseases))) " (familyTreeId, skinColor, skinColor, deathPlace, deathPlace, profession, profession, desease, desease) 
+    persons2 <- query   "SELECT id, family_tree_id,level,name,last_name,birth_date,hair_color,eye_color,skin_color, death_date, death_place, profession, deseases::text,extract (year from AGE(current_date,TO_DATE(birth_date, 'DD/MM/YYYY')))::int  FROM persons WHERE family_tree_id = ? and (? = '' or initcap(skin_color) = initcap(?) ) and (? = '' or initcap(death_place) = initcap(?) ) and (? = '' or initcap(profession) = initcap(?) ) and (? = '' or cast(coalesce(nullif(?,''),'-1') as float) in (select unnest(deseases))) " (familyTreeId, skinColor, skinColor, deathPlace, deathPlace, profession, profession, desease, desease) 
     persons3 <- query   "SELECT id, family_tree_id,level,name,last_name,birth_date,hair_color,eye_color,skin_color, death_date, death_place, profession, deseases::text ,extract (year from AGE(current_date,TO_DATE(birth_date, 'DD/MM/YYYY')))::int  FROM persons WHERE family_tree_id = ? and (? = '' or cast(coalesce(nullif(?,''),'-1') as float) = (select extract (year from AGE(current_date,TO_DATE(birth_date, 'DD/MM/YYYY'))))) " (familyTreeId, age, age) 
 
     modifyResponse $ setHeader "Content-Type" "application/json"
-    writeLBS . encode $ ( (persons `intersect` (persons2 `intersect` persons3)) :: [DBPerson] )
+    writeLBS . encode $ ( dbPersonToFilteredPerson ((persons `intersect` (persons2 `intersect` persons3)) :: [DBPerson]) )
+
+dbPersonToFilteredPerson  :: [DBPerson] -> [FilteredPerson]
+dbPersonToFilteredPerson [] = []
+dbPersonToFilteredPerson ( (DBPerson id ftId l fn ln bd hc ec sc dd dp pr dss age) : ps) = (FilteredPerson id ftId l fn ln bd hc ec sc dd dp pr (getDeseases (show dss)) age)  : (dbPersonToFilteredPerson ps)
+
+
 
 getFamilyTrees :: Handler b FamilyTreeController ()
 getFamilyTrees = do 
@@ -284,6 +297,20 @@ createFamilyTree = do
             writeLBS . encode $ (familyTreeId :: [ResponseId])
         else do 
             modifyResponse $ setResponseCode 403
+            writeLBS . encode $ (ids :: [ResponseId])
+
+getFamilyTreeByName :: Handler b FamilyTreeController ()
+getFamilyTreeByName = do
+    maybeName <- getParam "name"
+    let  name = fromMaybe "" maybeName
+    ids <- query "SELECT id FROM family_trees WHERE name = ?" (Only name)
+
+    if Prelude.null $ (ids :: [ResponseId])
+        then do
+            modifyResponse $ setResponseCode 404
+            writeLBS "Not found"
+        else do 
+            modifyResponse $ setResponseCode 200
             writeLBS . encode $ (ids :: [ResponseId])
 
 

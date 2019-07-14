@@ -29,5 +29,5 @@ CREATE TABLE parent_relation(
 
 CREATE TABLE family_trees(
 	id serial PRIMARY KEY,
-	name text
+	name text UNIQUE
 );

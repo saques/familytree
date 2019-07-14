@@ -1,5 +1,6 @@
 module Main exposing (main)
 
+import List
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
@@ -30,6 +31,8 @@ import Snippets.Home exposing (..)
 import Snippets.MainPage exposing (..)
 import Snippets.FamilyTree exposing (..)
 
+import Bootstrap.Accordion as Accordion
+
 
 -------------------------------------------------------------------
 
@@ -52,25 +55,34 @@ init flags url key =
             Navbar.initialState NavMsg
 
         ( model, urlCmd ) =
-            urlUpdate url { navKey = key, 
+            urlUpdate url { accordionState = Accordion.initialState,
+                            navKey = key, 
                             navState = navState, 
                             page = Home, 
                             modalVisibility = Modal.hidden, 
                             userLogin = UserLogin "" "" "" False,
-                            ftName = "",
-                            globalError = "" }
+                            globalError = "",
+                            ftData = ftDataInit}
     in
         ( model, Cmd.batch [ urlCmd, navCmd ] )
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Navbar.subscriptions model.navState NavMsg
+        Sub.batch 
+        [
+            Navbar.subscriptions model.navState NavMsg,
+            Accordion.subscriptions model.accordionState AccordionMsg
+        ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+
+        AccordionMsg state ->
+            ( { model | accordionState = state } , Cmd.none )
+
         ClickedLink req ->
              case req of
                  Browser.Internal url ->
@@ -82,7 +94,9 @@ update msg model =
             --urlUpdate url model
             (model, Cmd.none)
 
-        Goto page -> ({model | page = page}, Cmd.none)
+        Goto page -> ({model | ftData = ftDataInit, 
+                               page = page, 
+                               accordionState = Accordion.initialState}, Cmd.none)
 
         NavMsg state ->
             ( { model | navState = state }
@@ -123,19 +137,38 @@ update msg model =
         Login -> (model, loginUser model)
 
         Logout -> ({model | userLogin = logOut model.userLogin, 
+                            accordionState = Accordion.initialState,
+                            ftData = ftDataInit,
                             page = Home,
                             globalError = "" }, Cmd.none)
 
-        SetFtName name -> ( { model | ftName = name }, Cmd.none)
+        SetFtName name -> ( { model | ftData = ftDataSetName name model.ftData }, Cmd.none)
 
         CreateFamilyTree -> (model, createFamilyTree model)
 
-        ResponseCreateFamilyTree result ->
+        ResponseGetFTId m result ->
             case result of
-                Ok id -> ( { model | page = FamilyTree,
-                                     globalError = "" }, Cmd.none)
-                Err _ -> ( { model | globalError = "Error creating family tree " ++ model.ftName }
-                            , Cmd.none )
+                Err e -> ( {model | globalError = m ++ model.ftData.name} , Cmd.none )
+                Ok id -> 
+                    case List.head id of
+                        Nothing -> ( { model | globalError = "API returned nothing" }
+                                    , Cmd.none )
+                        Just responseId -> ( {model | ftData = ftDataSetId responseId.id model.ftData}, 
+                            getFamilyTreeById responseId.id model)
+                    
+            
+
+        ResponseGetFamilyTreeById result ->
+            case result of
+                --Should never reach first case
+                Err e -> ( model, Cmd.none )
+                Ok ft -> ( { model | ftData = (ftDataSetFT ft model.ftData),
+                                               page = FamilyTree,
+                                               globalError = "" }, Cmd.none)
+
+        LoadFamilyTree -> (model, getFamilyTreeByName model)
+
+        OffsetLevel i -> ({model | ftData = offsetLevel i model.ftData}, Cmd.none)
                     
 
 
