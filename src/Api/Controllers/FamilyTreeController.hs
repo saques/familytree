@@ -40,6 +40,7 @@ apiRoutes :: [(B.ByteString, Handler b FamilyTreeController ())]
 apiRoutes = Prelude.map (mapSecond (authenticate >>))
             [("/", method GET getFamilyTrees),
                 ("/:id", method GET getFamilyTreeById),
+                ("/name/:name", method GET getFamilyTreeByName),
                 ("/parent-relations", method GET getParentRelations),
                 ("/:id/filter", method GET getPersonsWithFilter),
                 ("/:id/parent/:descendantId", method POST addPersonAsParent),
@@ -64,15 +65,20 @@ getFamilyTreeById :: Handler b FamilyTreeController ()
 getFamilyTreeById = do 
     maybeId <- getParam "id"
     let id = fromMaybe "" maybeId
-    persons <- query "SELECT * FROM persons WHERE family_tree_id = ?" (Only id)
-    if Prelude.null $ (persons :: [DBPerson])
+    fts <- query "SELECT id FROM family_trees WHERE id = ?" (Only id)
+    if Prelude.null $ (fts :: [ResponseId])
         then do
             modifyResponse $ setResponseCode 404
             writeLBS "Not found"
         else do
-            parentRelations <- query "SELECT * FROM parent_relation where descendant_id in (SELECT unnest(?))"  (Only ( PGArray {fromPGArray =  (getIds persons)}))
             modifyResponse $ setHeader "Content-Type" "application/json"
-            writeLBS . encode $ ( (addRelations parentRelations (generateFromPersons persons (Ft []))) :: FamilyTree) 
+            persons <- query "SELECT * FROM persons WHERE family_tree_id = ?" (Only id)
+            if Prelude.null $ (persons :: [DBPerson])
+                then do
+                    writeLBS . encode $ ( (addRelations [] (generateFromPersons persons (Ft []))) :: FamilyTree) 
+                else do 
+                    parentRelations <- query "SELECT * FROM parent_relation where descendant_id in (SELECT unnest(?))"  (Only ( PGArray {fromPGArray =  (getIds persons)}))
+                    writeLBS . encode $ ( (addRelations parentRelations (generateFromPersons persons (Ft []))) :: FamilyTree) 
 
 
 getPersonsWithFilter :: Handler b FamilyTreeController ()
@@ -241,6 +247,20 @@ createFamilyTree = do
             writeLBS . encode $ (familyTreeId :: [ResponseId])
         else do 
             modifyResponse $ setResponseCode 403
+            writeLBS . encode $ (ids :: [ResponseId])
+
+getFamilyTreeByName :: Handler b FamilyTreeController ()
+getFamilyTreeByName = do
+    maybeName <- getParam "name"
+    let  name = fromMaybe "" maybeName
+    ids <- query "SELECT id FROM family_trees WHERE name = ?" (Only name)
+
+    if Prelude.null $ (ids :: [ResponseId])
+        then do
+            modifyResponse $ setResponseCode 404
+            writeLBS "Not found"
+        else do 
+            modifyResponse $ setResponseCode 200
             writeLBS . encode $ (ids :: [ResponseId])
 
 

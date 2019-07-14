@@ -1,5 +1,6 @@
 module Main exposing (main)
 
+import List
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
@@ -58,7 +59,8 @@ init flags url key =
                             modalVisibility = Modal.hidden, 
                             userLogin = UserLogin "" "" "" False,
                             ftName = "",
-                            globalError = "" }
+                            globalError = "",
+                            currentFamilyTree = Nothing }
     in
         ( model, Cmd.batch [ urlCmd, navCmd ] )
 
@@ -82,7 +84,7 @@ update msg model =
             --urlUpdate url model
             (model, Cmd.none)
 
-        Goto page -> ({model | page = page}, Cmd.none)
+        Goto page -> ({model | ftName = "", currentFamilyTree = Nothing, page = page}, Cmd.none)
 
         NavMsg state ->
             ( { model | navState = state }
@@ -130,12 +132,26 @@ update msg model =
 
         CreateFamilyTree -> (model, createFamilyTree model)
 
-        ResponseCreateFamilyTree result ->
+        ResponseGetFTId string result ->
             case result of
-                Ok id -> ( { model | page = FamilyTree,
-                                     globalError = "" }, Cmd.none)
-                Err _ -> ( { model | globalError = "Error creating family tree " ++ model.ftName }
+                Ok id -> 
+                    case List.head id of
+                        Nothing -> ( { model | globalError = "API returned nothing" }
+                                    , Cmd.none )
+                        Just responseId -> (model, getFamilyTreeById responseId.id model)
+
+                Err _ -> ( { model | globalError = string ++ model.ftName }
                             , Cmd.none )
+
+        ResponseGetFamilyTreeById result ->
+            case result of
+                Ok ft -> ( { model | currentFamilyTree = Just ft,
+                                     page = FamilyTree,
+                                     globalError = "" }, Cmd.none)
+                Err _ -> ( { model | globalError = "Error retrieving family tree " ++ model.ftName }
+                            , Cmd.none )
+
+        LoadFamilyTree -> (model, getFamilyTreeByName model)
                     
 
 

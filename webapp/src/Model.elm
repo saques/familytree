@@ -74,6 +74,7 @@ type alias Model =
     , userLogin : UserLogin
     , ftName : String
     , globalError : String
+    , currentFamilyTree : Maybe FamilyTree
     }
 
 type Msg
@@ -90,5 +91,7 @@ type Msg
     | ResponseLoginRegister String (Result Http.Error (String))
     | SetFtName String
     | CreateFamilyTree
-    | ResponseCreateFamilyTree (Result Http.Error (List ResponseId))
+    | ResponseGetFTId String (Result Http.Error (List ResponseId))
+    | ResponseGetFamilyTreeById (Result Http.Error FamilyTree)
     | Goto Page
+    | LoadFamilyTree

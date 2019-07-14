@@ -19,6 +19,7 @@ pageMain model =
     [ h3 [] [ text "Welcome to Familytree!" ]
     , Grid.containerFluid[]
         [
+            h4 [] [ text model.globalError ],
             Grid.row []
             [
                 Grid.col[]
@@ -27,13 +28,25 @@ pageMain model =
                     [ Form.group []
                         [ Form.label [for "ftName"] [ text "Family tree name"]
                         , Input.text [ Input.id "ftName", Input.onInput SetFtName ]
-                        , Form.help [] [ text model.globalError ]
                         ]
                     , Button.button [ 
                         Button.primary, 
                         Button.attrs [onClick CreateFamilyTree] ]
                         [ text "Create family tree" ]
                     ] 
+                ] ,
+                Grid.col[]
+                [
+                    Form.form []
+                    [ Form.group []
+                        [ Form.label [for "ftName"] [ text "Family tree name"]
+                        , Input.text [ Input.id "ftName", Input.onInput SetFtName ]
+                        ]
+                    , Button.button [ 
+                        Button.primary, 
+                        Button.attrs [onClick LoadFamilyTree] ]
+                        [ text "Load family tree" ]
+                    ]
                 ]
             ]
         ]
