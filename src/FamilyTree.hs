@@ -29,10 +29,10 @@ type DeathDate = Maybe Text
 type Dead = Bool
 type DeathPlace = Maybe Text
 type Profession = Maybe Text
-data HairColor = Blonde | BrownHair | BlackHair | Red deriving (Show , Eq, Ord, Generic)
-data EyeColor = Green | Blue | Brown | Black deriving (Show , Eq, Ord, Generic)
-data SkinColor = LightSkin | DarkSkin deriving (Show , Eq, Ord, Generic)
-data Deseases = Cancer | Diabetes | Celiac deriving (Show , Eq, Ord, Generic)
+data HairColor = Blonde | BrownHair | BlackHair | Red | White | IncorrectHairColor deriving (Show , Eq, Ord, Generic)
+data EyeColor = Green | Blue | Brown | Black | IncorrectEyeColor deriving (Show , Eq, Ord, Generic)
+data SkinColor = LightSkin | DarkSkin |  IncorrectSkinColor deriving (Show , Eq, Ord, Generic)
+data Deseases = Cancer | Diabetes | Leukemia | IncorrectDesease deriving (Show , Eq, Ord, Generic)
 
 
 

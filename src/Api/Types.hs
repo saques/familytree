@@ -10,7 +10,7 @@ import           Control.Applicative
 import           Data.Text
 import           Data.Aeson
 import           Snap.Snaplet.PostgresqlSimple
-import			 FamilyTree
+import			     FamilyTree
 
 data User = User
     { id :: Int
@@ -45,7 +45,8 @@ data DBPerson = DBPerson
     , deathPlace :: Maybe Text
     , profession :: Maybe Text
     , deseases :: Maybe Text
-   } deriving Generic 
+    , age :: Int
+   } deriving (Generic , Eq)
 
 instance FromRow DBPerson where
     fromRow = DBPerson <$> field
@@ -61,9 +62,9 @@ instance FromRow DBPerson where
                        <*> field
                        <*> field
                        <*> field
-
+                       <*> field
 instance ToJSON DBPerson where
-    toJSON (DBPerson id ftId level name lastname bd hc ec sc dp dd  pr dss) = object [ "id" .= id, "name" .= name ,"lastname".= lastname, "birthDate" .= bd,  "hairColor" .= hc,  "eyeColor" .= ec, "skinColor" .= sc]
+    toJSON (DBPerson id ftId level name lastname bd hc ec sc dp dd  pr dss age) = object [ "id" .= id, "name" .= name ,"lastname".= lastname, "birthDate" .= bd,  "hairColor" .= hc,  "eyeColor" .= ec, "skinColor" .= sc , "age" .= age, "deathPlace" .= dp, "deathDate" .= dd , "profession" .= pr, "deseases" .= dss]
 
 instance FromJSON DBPerson where
     parseJSON = genericParseJSON defaultOptions
@@ -83,7 +84,7 @@ instance FromJSON LevelWithPersons where
 
 
 instance ToJSON Person where
-    toJSON (Ps id name lastname bd a hc ec sc d dp dd  pr dss) = object [ "id" .= id, "name" .= name ,"lastname".= lastname, "birthDate" .= bd, "age" .= a, "hairColor" .= hc,  "eyeColor" .= ec, "skinColor" .= sc]
+    toJSON (Ps id name lastname bd a hc ec sc d dp dd  pr dss) = object [ "id" .= id, "name" .= name ,"lastname".= lastname, "birthDate" .= bd, "age" .= a, "hairColor" .= hc,  "eyeColor" .= ec, "skinColor" .= sc , "deathPlace" .= dp, "deathDate" .= dd , "profession" .= pr ,"deseases" .= dss]
 
 instance FromJSON Person where
     parseJSON = genericParseJSON defaultOptions
@@ -98,26 +99,40 @@ instance FromJSON PersonWithParents where
 
 
 instance ToJSON HairColor where
-    toJSON (a) = "Rubio"
+    toJSON (Blonde) = "Rubio"
+    toJSON (BrownHair) = "Castaño"
+    toJSON (BlackHair) = "Morocho"
+    toJSON (Red) = "Colorado"
+    toJSON (White) = "Blanco"
+    toJSON (IncorrectHairColor) = ""
 
 instance FromJSON HairColor where
     parseJSON = genericParseJSON defaultOptions   
 
 instance ToJSON EyeColor where
-    toJSON (a) = "Rubio"
+    toJSON (Green) = "Verdes"
+    toJSON (Blue) = "Azules"
+    toJSON (Brown) = "Marrones"
+    toJSON (Black) = "Negros"
+    toJSON (IncorrectEyeColor) = ""
 
 instance FromJSON EyeColor where
     parseJSON = genericParseJSON defaultOptions   
 
 instance ToJSON SkinColor where
-    toJSON (a) = "Rubio"
+    toJSON (LightSkin) = "Clara"
+    toJSON (DarkSkin) = "Oscura"
+    toJSON ( IncorrectSkinColor ) = ""
 
 instance FromJSON SkinColor where
     parseJSON = genericParseJSON defaultOptions   
 
 
 instance ToJSON Deseases where
-    toJSON (a) = "Rubio"
+    toJSON (Cancer) = "Cancer"
+    toJSON (Diabetes) = "Diabetes"
+    toJSON (Leukemia) = "Leucemia"
+    toJSON ( IncorrectDesease ) = ""
 
 instance FromJSON Deseases where
     parseJSON = genericParseJSON defaultOptions   
