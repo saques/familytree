@@ -208,7 +208,7 @@ getParentIdFromQuery ((ResponseId id) :ps) = id
 addPersonAsParent :: Handler b FamilyTreeController ()
 addPersonAsParent = do 
     maybeFamilyTreeId <- getParam "id"
-    maybeLevel <- getParam "level"
+    maybeLevel <- getPostParam "level"
     maybeDescendantId <- getParam "descendantId"
     maybeName <- getPostParam "name"
     maybeLastName <- getPostParam "lastName"
@@ -244,7 +244,7 @@ addPersonAsParent = do
 addPersonAsDescendant :: Handler b FamilyTreeController ()
 addPersonAsDescendant = do 
     maybeFamilyTreeId <- getParam "id"
-    maybeLevel <- getParam "level"
+    maybeLevel <- getPostParam "level"
     maybeParentId <- getParam "parentId"
     maybeName <- getPostParam "name"
     maybeLastName <- getPostParam "lastName"

@@ -94,6 +94,31 @@ addPersonToLevel model i =
     , tracker = Nothing
     }
 
+addPersonAsParent : Model -> Int -> Int -> Cmd Msg
+addPersonAsParent model level childId = 
+  Http.request
+    { method = "POST"
+    , headers = [(Http.header "Token" model.userLogin.token)]
+    , url = api ++ "family-tree/" ++ (String.fromInt model.ftData.id) ++ "/parent/" ++ (String.fromInt childId)
+    , body = formBody 
+              [
+                ("name", model.personForm.name),
+                ("lastName", model.personForm.lastname),
+                ("birthDate", dateToCorrectDate model.personForm.birthDate),
+                ("deathDate", dateToCorrectDate model.personForm.deathDate),
+                ("deathPlace", model.personForm.deathPlace),
+                ("hairColor", model.personForm.hairColor),
+                ("eyeColor", model.personForm.eyeColor),
+                ("skinColor", model.personForm.skinColor),
+                ("level", (String.fromInt level)),
+                ("profession", model.personForm.profession),
+                ("deseases", diseasesToString model.personForm.diseases)
+              ]
+    , expect = Http.expectJson (ResponseAddToLevel) responseIdListDecoder
+    , timeout = Nothing
+    , tracker = Nothing
+    }
+
 
 
   

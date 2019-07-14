@@ -204,6 +204,8 @@ update msg model =
                                     , Cmd.none )
                         Just responseId -> ( model, getFamilyTreeById model.ftData.id model) 
 
+        AddPersonAsParent level childId -> (model, addPersonAsParent model level childId)
+
 
 
 

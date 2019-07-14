@@ -97,6 +97,7 @@ emptyPerson = Person "" "" "" "" "" [] 0 "" "" 0 "" ""
 type ModalType 
     = LoginType
     | CreateUserType Int
+    | AddPersonAsParentType Int Int
 
 
 type Page
@@ -154,6 +155,7 @@ type Msg
     | SetBirthDate String
     | AddPersonToLevel Int
     | ResponseAddToLevel (Result Http.Error (List ResponseId))
+    | AddPersonAsParent Int Int
 
 toggleDisease : String -> Bool -> Person -> Person
 toggleDisease s b p = 

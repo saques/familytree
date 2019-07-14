@@ -148,5 +148,9 @@ renderPersonAccordion model pWp i =
                 |> Accordion.view model.accordionState ]
 
             , ListGroup.li [] [text ("Parents: " ++ (stringOfParents pWp model.ftData.ft (i-1)))]
+            , 
+            (if List.length pWp.parents < 2 
+                then ListGroup.li[] [Button.button [ Button.primary, Button.attrs [onClick (ShowModal (AddPersonAsParentType (i-1) pWp.person.id))] ] [ text "Add parent" ]]
+                else ListGroup.li[] [])
         ]
     
