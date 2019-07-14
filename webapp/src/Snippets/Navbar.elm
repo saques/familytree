@@ -26,7 +26,7 @@ navbar model =
                 [ if not (isLoggedIn model) then
                     Button.button
                         [ Button.success
-                        , Button.attrs [onClick ShowModal]
+                        , Button.attrs [onClick (ShowModal LoginType)]
                         ]
                         [ text "Log in"]
                   else

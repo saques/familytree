@@ -14,6 +14,7 @@ import Bootstrap.Text as Text
 import Html.Events exposing (onClick)
 import Bootstrap.Card as Card
 import Bootstrap.Card.Block as Block
+import Bootstrap.Utilities.Spacing as Spacing
 
 import Bootstrap.Accordion as Accordion
 import Dto.FamilyTreeDto exposing (..)
@@ -39,23 +40,26 @@ ftView model =
                                     [ text "Go up" ]
                 ]
             ],
-            Grid.row []
+            Grid.row [Row.attrs [Spacing.p3]]
             [
                 --left
-                Grid.col []
+                Grid.col [Col.textAlign Text.alignLgCenter]
                 [
+                    addToLvlButton model.ftData.currLevel,
                     lvlMsg model.ftData.left,
                     renderLevel model model.ftData.left
                 ],
                 --mid
-                Grid.col []
+                Grid.col [Col.textAlign Text.alignLgCenter]
                 [
+                    addToLvlButton (model.ftData.currLevel - 1),
                     lvlMsg model.ftData.mid,
                     renderLevel model model.ftData.mid
                 ],
                 --right
-                Grid.col []
+                Grid.col [Col.textAlign Text.alignLgCenter]
                 [
+                    addToLvlButton (model.ftData.currLevel - 2),
                     lvlMsg model.ftData.right,
                     renderLevel model model.ftData.right
                 ]
@@ -63,11 +67,14 @@ ftView model =
         ]
     ]
 
+addToLvlButton : Int -> Html Msg
+addToLvlButton i = Button.button [ Button.primary, Button.attrs [onClick (ShowModal (CreateUserType i))] ] [ text "Add" ]
+
 lvlMsg : Maybe ByLevel -> Html Msg
 lvlMsg b = 
     case b of
-        Nothing -> h4 [] [ text "Empty" ]
-        Just bl -> h4 [] [ text ("Showing level " ++ String.fromInt bl.level)]
+        Nothing -> h5 [] [ text "Empty" ]
+        Just bl -> h5 [] [ text ("Level " ++ String.fromInt bl.level)]
 
 renderLevel : Model -> Maybe ByLevel -> Html Msg
 renderLevel model b =
@@ -102,28 +109,35 @@ renderPersonAccordion model pWp i =
                                         [ 
                                             ListGroup.li [] 
                                             [
-                                                h6 [] [ text "Age:" ],
-                                                text (String.fromInt pWp.person.age)
+                                                text ("Age: " ++ (String.fromInt pWp.person.age))
                                             ]
                                             , ListGroup.li []
                                             [   
-                                                h6 [] [ text "Birthday:"],
-                                                text (pWp.person.birthDate)
+                                                text ("Birthday: " ++ pWp.person.birthDate)
                                             ]
                                             , ListGroup.li []
                                             [
-                                                h6 [] [ text "Eye color:"],
-                                                text (pWp.person.eyeColor)
+                                                text ("Eye color: " ++ pWp.person.eyeColor)
                                             ]
                                             , ListGroup.li []
                                             [
-                                                h6 [] [ text "Skin color:"],
-                                                text (pWp.person.skinColor)
+                                                text ("Skin color: " ++ pWp.person.skinColor)
                                             ]
                                             , ListGroup.li []
                                             [
-                                                h6 [] [ text "Hair color:"],
-                                                text (pWp.person.hairColor)
+                                                text ("Hair color: " ++ pWp.person.hairColor)
+                                            ]
+                                            , ListGroup.li []
+                                            [
+                                                text ("Profession: " ++ pWp.person.profession)
+                                            ]
+                                            , ListGroup.li []
+                                            [
+                                                text ("Death place and date: " ++ pWp.person.deathPlace ++ ", " ++ pWp.person.deathDate)
+                                            ]
+                                            , ListGroup.li []
+                                            [
+                                                text ("Known diseases: " ++ (List.foldl (concatenateStringsWith ", ") "" pWp.person.diseases))
                                             ]
                                         ]
                                     ]

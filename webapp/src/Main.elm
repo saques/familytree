@@ -25,7 +25,7 @@ import Utils exposing (..)
 import Requests.LoginAndRegister exposing (..)
 import Requests.FamilyTree.Crud exposing (..)
 
-import Snippets.LoginModal exposing (..)
+import Snippets.Modal exposing (..)
 import Snippets.Navbar exposing (..)
 import Snippets.Home exposing (..)
 import Snippets.MainPage exposing (..)
@@ -59,10 +59,12 @@ init flags url key =
                             navKey = key, 
                             navState = navState, 
                             page = Home, 
-                            modalVisibility = Modal.hidden, 
+                            modalVisibility = Modal.hidden,
+                            modalType = LoginType,
                             userLogin = UserLogin "" "" "" False,
                             globalError = "",
-                            ftData = ftDataInit}
+                            ftData = ftDataInit,
+                            personForm = emptyPerson}
     in
         ( model, Cmd.batch [ urlCmd, navCmd ] )
 
@@ -108,8 +110,8 @@ update msg model =
             , Cmd.none
             )
 
-        ShowModal ->
-            ( { model | modalVisibility = Modal.shown }
+        ShowModal t ->
+            ( { model | modalVisibility = Modal.shown, modalType = t }
             , Cmd.none
             )
 
@@ -163,16 +165,45 @@ update msg model =
                 --Should never reach first case
                 Err e -> ( model, Cmd.none )
                 Ok ft -> ( { model | ftData = (ftDataSetFT ft model.ftData),
+                                               modalVisibility = Modal.hidden,
                                                page = FamilyTree,
                                                globalError = "" }, Cmd.none)
 
         LoadFamilyTree -> (model, getFamilyTreeByName model)
 
         OffsetLevel i -> ({model | ftData = offsetLevel i model.ftData}, Cmd.none)
-                    
 
+        SetDeathPlace v -> ({model | personForm = setDeathPlace v model.personForm}, Cmd.none)
 
+        SetHairColor v -> ({model | personForm = setHairColor v model.personForm}, Cmd.none)
+
+        SetSkinColor v -> ({model | personForm = setSkinColor v model.personForm}, Cmd.none)
         
+        SetLastname v -> ({model | personForm = setLastName v model.personForm}, Cmd.none)
+        
+        SetDeathdate v -> ({model | personForm = setDeathDate v model.personForm}, Cmd.none)
+        
+        SetEyeColor v -> ({model | personForm = setEyeColor v model.personForm}, Cmd.none)
+        
+        SetName v -> ({model | personForm = setName v model.personForm}, Cmd.none)
+        
+        SetProfession v -> ({model | personForm = setProfession v model.personForm}, Cmd.none)
+        
+        SetBirthDate v -> ({model | personForm = setBirthDate v model.personForm}, Cmd.none)
+
+        SetDisease s b -> ({model | personForm = toggleDisease s b model.personForm}, Cmd.none)
+
+        AddPersonToLevel level -> (model, addPersonToLevel model level) 
+
+        ResponseAddToLevel result ->
+            case result of
+                Err e -> ( {model | globalError = "Error adding person to level"} , Cmd.none )
+                Ok id -> 
+                    case List.head id of
+                        Nothing -> ( { model | globalError = "API returned nothing" }
+                                    , Cmd.none )
+                        Just responseId -> ( model, getFamilyTreeById model.ftData.id model) 
+
 
 
 

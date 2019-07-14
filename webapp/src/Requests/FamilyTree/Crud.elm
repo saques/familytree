@@ -5,8 +5,9 @@ import Http exposing (..)
 import Model exposing (..)
 import HttpHelper exposing (..)
 import Dict
-import List exposing (foldl)
+import List exposing (..)
 import Dto.FamilyTreeDto exposing (..)
+import String
 
 
 
@@ -42,6 +43,53 @@ getFamilyTreeByName model =
     , url = api ++ "family-tree/name/" ++ model.ftData.name
     , body = Http.emptyBody
     , expect = Http.expectJson (ResponseGetFTId "Tree does not exist: ") responseIdListDecoder
+    , timeout = Nothing
+    , tracker = Nothing
+    }
+
+
+dateToCorrectDate : String -> String
+dateToCorrectDate s =
+  if String.isEmpty s 
+    then ""
+    else String.join "/" (List.reverse (String.split "-" s))
+
+
+mapDeseaseToNumber : String -> String
+mapDeseaseToNumber s = 
+  case s of
+      "Cancer" -> "0"
+      "Diabetes" -> "1"
+      "Leukemia" -> "2"
+      _ -> "3"
+          
+
+diseasesToString : List String -> String
+diseasesToString l = "{" ++ (String.join "," (List.map mapDeseaseToNumber l)) ++ "}"
+  
+
+
+addPersonToLevel : Model -> Int -> Cmd Msg
+addPersonToLevel model i = 
+  Http.request
+    { method = "POST"
+    , headers = [(Http.header "Token" model.userLogin.token)]
+    , url = api ++ "family-tree/" ++ (String.fromInt model.ftData.id) ++ "/level"
+    , body = formBody 
+              [
+                ("name", model.personForm.name),
+                ("lastName", model.personForm.lastname),
+                ("birthDate", dateToCorrectDate model.personForm.birthDate),
+                ("deathDate", dateToCorrectDate model.personForm.deathDate),
+                ("deathPlace", model.personForm.deathPlace),
+                ("hairColor", model.personForm.hairColor),
+                ("eyeColor", model.personForm.eyeColor),
+                ("skinColor", model.personForm.skinColor),
+                ("level", (String.fromInt i)),
+                ("profession", model.personForm.profession),
+                ("deseases", diseasesToString model.personForm.diseases)
+              ]
+    , expect = Http.expectJson (ResponseAddToLevel) responseIdListDecoder
     , timeout = Nothing
     , tracker = Nothing
     }

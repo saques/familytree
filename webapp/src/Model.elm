@@ -91,6 +91,14 @@ isLoggedIn model = model.userLogin.isLoggedIn
 logOut : UserLogin -> UserLogin
 logOut u = UserLogin u.username u.password "" False
 
+emptyPerson = Person "" "" "" "" "" [] 0 "" "" 0 "" ""
+
+
+type ModalType 
+    = LoginType
+    | CreateUserType Int
+
+
 type Page
     = Home
     | MainPage
@@ -107,9 +115,11 @@ type alias Model =
     , page : Page
     , navState : Navbar.State
     , modalVisibility : Modal.Visibility
+    , modalType : ModalType
     , userLogin : UserLogin
     , globalError : String
     , ftData : FTData
+    , personForm : Person
     }
 
 type Msg
@@ -118,7 +128,7 @@ type Msg
     | AccordionMsg Accordion.State
     | NavMsg Navbar.State
     | CloseModal
-    | ShowModal
+    | ShowModal ModalType
     | SetUsername String
     | SetPassword String
     | CreateUser
@@ -132,3 +142,49 @@ type Msg
     | Goto Page
     | LoadFamilyTree
     | OffsetLevel Int
+    | SetDeathPlace String
+    | SetHairColor String
+    | SetSkinColor String
+    | SetLastname String
+    | SetDeathdate String
+    | SetDisease String Bool
+    | SetEyeColor String
+    | SetName String
+    | SetProfession String
+    | SetBirthDate String
+    | AddPersonToLevel Int
+    | ResponseAddToLevel (Result Http.Error (List ResponseId))
+
+toggleDisease : String -> Bool -> Person -> Person
+toggleDisease s b p = 
+    if not (List.member s p.diseases) then
+        {p | diseases = (s :: p.diseases)}
+    else 
+        {p | diseases = List.filter (\x -> not (x == s)) p.diseases}
+
+setDeathPlace : String -> Person -> Person
+setDeathPlace s p = {p | deathPlace = s}
+
+setHairColor : String -> Person -> Person
+setHairColor s p = {p | hairColor = s}
+
+setSkinColor : String -> Person -> Person
+setSkinColor s p = {p | skinColor = s}
+
+setLastName : String -> Person -> Person
+setLastName s p = {p | lastname = s}
+
+setDeathDate : String -> Person -> Person
+setDeathDate s p = {p | deathDate = s}
+
+setEyeColor : String -> Person -> Person
+setEyeColor s p = {p | eyeColor = s}
+
+setName : String -> Person -> Person
+setName s p = {p | name = s}
+
+setProfession : String -> Person -> Person
+setProfession s p = {p | profession = s}
+
+setBirthDate : String -> Person -> Person
+setBirthDate s p = {p | birthDate = s}

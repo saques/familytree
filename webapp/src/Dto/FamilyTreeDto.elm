@@ -87,13 +87,13 @@ personWithParentsToListOfParents pWp ft searchLevel =
     List.concat(List.foldl (::) [] (List.map (\x -> getPersonByIdByLevel x searchLevel ft) pWp.parents) )
 
 
-concatenateStringsWithSpace : String -> String -> String
-concatenateStringsWithSpace s1 s2 = s1 ++ " " ++ s2
+concatenateStringsWith : String -> String -> String -> String
+concatenateStringsWith sep s1 s2 = s1 ++ sep ++ s2
 
 stringOfParents : PersonWithParents -> Maybe FamilyTree -> Int -> String
 stringOfParents pWp ft i = 
-    List.foldl  concatenateStringsWithSpace "" 
-        (List.map (\x -> concatenateStringsWithSpace x.name x.lastname) 
+    List.foldl  (concatenateStringsWith ", ") "" 
+        (List.map (\x -> concatenateStringsWith " " x.name x.lastname) 
                    (personWithParentsToListOfParents pWp ft i))
 
 
@@ -129,26 +129,34 @@ personWithParentsDecoder =
         (D.field "parents" (D.list D.int))
 
 type alias Person =
-    { hairColor : String
+    { deathPlace : String 
+    , hairColor : String
     , skinColor : String
     , lastname : String
+    , deathDate : String 
+    , diseases : List String
     , age : Int
     , eyeColor : String
     , name : String
     , id : Int
+    , profession :  String  
     , birthDate : String
     }
 
 personDecoder : D.Decoder Person
 personDecoder = 
     D.succeed Person
+        |> DE.andMap (D.field "deathPlace" D.string)
         |> DE.andMap (D.field "hairColor" D.string)
         |> DE.andMap (D.field "skinColor" D.string)
         |> DE.andMap (D.field "lastname" D.string)
+        |> DE.andMap (D.field "deathDate" D.string)
+        |> DE.andMap (D.field "deseases" (D.list D.string))
         |> DE.andMap (D.field "age" D.int)
         |> DE.andMap (D.field "eyeColor" D.string)
         |> DE.andMap (D.field "name" D.string)
         |> DE.andMap (D.field "id" D.int)
+        |> DE.andMap (D.field "profession" D.string |> DE.withDefault "")
         |> DE.andMap (D.field "birthDate" D.string)
 
 
