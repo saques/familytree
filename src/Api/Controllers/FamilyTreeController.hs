@@ -175,18 +175,32 @@ getPersonsOfFamilyTree = do
 
 getPersonsInCommon :: Handler b FamilyTreeController ()
 getPersonsInCommon = do 
-    maybeFamilyTree1Id <- getQueryParam "id1"
-    maybeFamilyTree2Id <- getQueryParam "id2"
+    maybeFamilyTree1Name <- getQueryParam "name1"
+    maybeFamilyTree2Name <- getQueryParam "name2"
 
-    let familyTree1Id = fromMaybe "" maybeFamilyTree1Id
-        familyTree2Id = fromMaybe "" maybeFamilyTree2Id
+    let familyTree1Name= fromMaybe "" maybeFamilyTree1Name
+        familyTree2Name = fromMaybe "" maybeFamilyTree2Name
 
-    persons <- query   "SELECT id, family_tree_id,level,name,last_name,birth_date,hair_color,eye_color,skin_color, death_date, death_place, profession, deseases::text ,extract (year from AGE(current_date,TO_DATE(birth_date, 'DD/MM/YYYY')))::int  FROM persons WHERE family_tree_id = cast(coalesce(nullif(?,''),'-1') as float)" (Only familyTree1Id) 
-    persons2 <- query   "SELECT id, family_tree_id,level,name,last_name,birth_date,hair_color,eye_color,skin_color, death_date, death_place, profession, deseases::text ,extract (year from AGE(current_date,TO_DATE(birth_date, 'DD/MM/YYYY')))::int  FROM persons WHERE family_tree_id = cast(coalesce(nullif(?,''),'-1') as float)" (Only familyTree2Id) 
+    ids <- query "SELECT id FROM family_trees WHERE name = ?" (Only familyTree1Name)
 
-    modifyResponse $ setHeader "Content-Type" "application/json"
-    writeLBS . encode $ ( dbPersonToFilteredPerson ((persons `intersect` persons2 ) :: [DBPerson]) )
+    if Prelude.null $ (ids :: [ResponseId])
+        then do
+            modifyResponse $ setResponseCode 404
+            writeLBS "Not found"
+        else do 
+            ids2 <- query "SELECT id FROM family_trees WHERE name = ?" (Only familyTree2Name)
+            if Prelude.null $ (ids2 :: [ResponseId])
+                then do
+                    modifyResponse $ setResponseCode 404
+                    writeLBS "Not found"
+                else do 
+                    persons <- query   "SELECT id, family_tree_id,level,name,last_name,birth_date,hair_color,eye_color,skin_color, death_date, death_place, profession, deseases::text ,extract (year from AGE(current_date,TO_DATE(birth_date, 'DD/MM/YYYY')))::int  FROM persons WHERE family_tree_id = ?" (Only (getFtIdFromRespId ids)) 
+                    persons2 <- query   "SELECT id, family_tree_id,level,name,last_name,birth_date,hair_color,eye_color,skin_color, death_date, death_place, profession, deseases::text ,extract (year from AGE(current_date,TO_DATE(birth_date, 'DD/MM/YYYY')))::int  FROM persons WHERE family_tree_id = ?" (Only (getFtIdFromRespId ids2)) 
 
+                    modifyResponse $ setHeader "Content-Type" "application/json"
+                    writeLBS . encode $ ( dbPersonToFilteredPerson ((persons `intersect` persons2 ) :: [DBPerson]) )
+
+   
 getFamilyTrees :: Handler b FamilyTreeController ()
 getFamilyTrees = do 
     ids <- query_ "SELECT * FROM family_trees" 
