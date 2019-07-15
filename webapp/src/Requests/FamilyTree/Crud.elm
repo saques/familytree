@@ -159,4 +159,18 @@ queryPersons model =
 
 
   
-
+getRelativesInCommon : Model -> Cmd Msg
+getRelativesInCommon model =
+  Http.request
+    { method = "Get"
+    , headers = [(Http.header "Token" model.userLogin.token)]
+    , url = api ++ "family-tree/common?"  ++ buildQueryParams 
+                                        [
+                                          ("name1", model.relativesInCommonData.name1),
+                                          ("name2", model.relativesInCommonData.name2)
+                                        ]
+    , body = Http.emptyBody
+    , expect = Http.expectJson (ResponseQueryPersons) personListDecoder
+    , timeout = Nothing
+    , tracker = Nothing
+    }

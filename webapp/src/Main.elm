@@ -31,6 +31,7 @@ import Snippets.Home exposing (..)
 import Snippets.MainPage exposing (..)
 import Snippets.FamilyTree exposing (..)
 import Snippets.FamilyTreeQuery exposing (..)
+import Snippets.RelativesInCommon exposing (..)
 
 import Bootstrap.Accordion as Accordion
 
@@ -65,6 +66,7 @@ init flags url key =
                             userLogin = UserLogin "" "" "" False,
                             globalError = "",
                             ftData = ftDataInit,
+                            relativesInCommonData = relativesInCommonDataInit,
                             personForm = emptyPerson,
                             disease = "",
                             queryPersons = []}
@@ -100,12 +102,14 @@ update msg model =
             (model, Cmd.none)
 
         Goto Home -> ({model | ftData = ftDataInit, 
+                               relativesInCommonData = relativesInCommonDataInit,
                                page = Home, 
                                personForm = emptyPerson,
                                queryPersons = [],
                                accordionState = Accordion.initialState}, Cmd.none)
 
         Goto page -> ({model | page = page,
+                              relativesInCommonData = relativesInCommonDataInit,
                                personForm = emptyPerson, 
                                queryPersons = [],
                                accordionState = Accordion.initialState}, Cmd.none)
@@ -151,12 +155,15 @@ update msg model =
         Logout -> ({model | userLogin = logOut model.userLogin, 
                             accordionState = Accordion.initialState,
                             ftData = ftDataInit,
+                            relativesInCommonData = relativesInCommonDataInit,
                             page = Home,
                             queryPersons = [],
                             personForm = emptyPerson,
                             globalError = "" }, Cmd.none)
 
         SetFtName name -> ( { model | ftData = ftDataSetName name model.ftData }, Cmd.none)
+        SetFt1Name name -> ( { model | relativesInCommonData = relativesInCommonDataSetName1 name model.relativesInCommonData }, Cmd.none)
+        SetFt2Name name -> ( { model | relativesInCommonData = relativesInCommonDataSetName2 name model.relativesInCommonData }, Cmd.none)
 
         CreateFamilyTree -> (model, createFamilyTree model)
 
@@ -224,9 +231,11 @@ update msg model =
 
         QueryPersons -> (model, queryPersons model)
 
+        GetRelativesInCommon -> (model, getRelativesInCommon model)
+
         ResponseQueryPersons result ->
             case result of 
-                Err e -> ({model | globalError = "Error during query"}, Cmd.none)
+                Err e -> ({model | globalError = "Error during query" , queryPersons = [] }, Cmd.none)
                 Ok persons -> ({model | queryPersons = persons, globalError = ""}, Cmd.none)
 
 
@@ -287,6 +296,9 @@ mainContent model =
 
             FamilyTreeQuery ->
                 ftQuery model
+
+            RelativesInCommon ->
+                relativesInCommon model
 
 
 pageNotFound : List (Html Msg)

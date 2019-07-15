@@ -53,8 +53,25 @@ type alias FTData =
         right : Maybe ByLevel
     }
 
+type alias RelativesInCommonData =
+    {
+        name1 : String,
+        name2 : String
+    }
+
+
 ftDataInit : FTData
 ftDataInit = FTData "" 0 Nothing 0 Nothing Nothing Nothing
+
+relativesInCommonDataInit : RelativesInCommonData
+relativesInCommonDataInit = RelativesInCommonData "" ""
+
+relativesInCommonDataSetName1 : String -> RelativesInCommonData -> RelativesInCommonData
+relativesInCommonDataSetName1 s d = {d | name1 = s}
+
+relativesInCommonDataSetName2 : String -> RelativesInCommonData -> RelativesInCommonData
+relativesInCommonDataSetName2 s d = {d | name2 = s}
+
 
 ftDataSetName : String -> FTData -> FTData
 ftDataSetName s d = {d | name = s}
@@ -106,7 +123,7 @@ type Page
     | NotFound
     | FamilyTreeView
     | FamilyTreeQuery
-
+    | RelativesInCommon
 
 type alias Flags =
     {}
@@ -121,6 +138,7 @@ type alias Model =
     , userLogin : UserLogin
     , globalError : String
     , ftData : FTData
+    , relativesInCommonData : RelativesInCommonData
     , personForm : Person
     , disease : String
     , queryPersons : List Person
@@ -140,6 +158,8 @@ type Msg
     | Logout
     | ResponseLoginRegister String (Result Http.Error (String))
     | SetFtName String
+    | SetFt1Name String
+    | SetFt2Name String
     | CreateFamilyTree
     | ResponseGetFTId String (Result Http.Error (List ResponseId))
     | ResponseGetFamilyTreeById (Result Http.Error FamilyTree)
@@ -162,6 +182,7 @@ type Msg
     | SetOneDisease String
     | SetAge String
     | QueryPersons
+    | GetRelativesInCommon
     | ResponseQueryPersons (Result Http.Error (List Person))
 
 toggleDisease : String -> Bool -> Person -> Person

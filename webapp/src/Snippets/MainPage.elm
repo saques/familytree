@@ -14,6 +14,7 @@ import Bootstrap.Form as Form
 import Bootstrap.Form.Input as Input
 import Bootstrap.Button as Button
 import Bootstrap.Text as Text
+import Bootstrap.Utilities.Spacing as Spacing
 
 pageMain : Model -> List (Html Msg)
 pageMain model =
@@ -61,7 +62,18 @@ pageMain model =
                         [ text "Load family tree" ]
                     ]
                 ]
+            ],
+              Grid.row [Row.attrs [Spacing.p3]]
+            [
+                Grid.col[Col.textAlign Text.alignMdCenter]
+                [
+                   Button.button [ Button.secondary, 
+                                Button.attrs [onClick (Goto RelativesInCommon)] ]
+                                [ text "See relatives in common" ]
+                ] 
             ]
+
+
         ]
     ]
     
