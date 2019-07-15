@@ -1,14 +1,17 @@
 # familytree
 
-## TO RUN
+## TO RUN (from src/)
 
 - [Install the Haskell Platform](https://www.haskell.org/platform/) (should be able to run Cabal)
 - [Follow tutorial](http://snapframework.com/download)
 - [Set PATH](http://snapframework.com/docs/quickstart)
-- Run `cabal install` in project dir
-- Run with `familytree -p <port>`
+- `sudo apt install libpq-dev`
+- `cabal install snaplet-postgresql-simple`
+- `cabal install`
+- Run `cabal install` in backend dir `src/`
+- Run with `familytree -p 9000`
 
-## RUN FRONTEND
+## RUN FRONTEND (from webapp/)
 
 - Install elm: `npm install -g elm` (Should be version 0.19.0)
 - Build Main.elm: `elm make src/Main.elm --output=main.js`
@@ -16,14 +19,11 @@
 - Go to: `http://localhost:8000/index.html`
 - Enjoy
 
-## Database setup
+## Database setup (from sql/)
 
-1. `sudo apt install libpq-dev`
-2. `cabal install snaplet-postgresql-simple`
-3. On project dir: `cabal install`
-4. Set password for `postgres` user to `postgres` as specified below
-5. `psql -h localhost -U postgres -d familytree -a -f schema.sql`
-6. Run with `familytree -p <port>`
+1. Set password for `postgres` user to `postgres` as specified below.
+2. Make sure a `familytree` database exists, as shown below.
+2. Run the schema:`psql -h localhost -U postgres -d familytree -a -f schema.sql`
 
 ## Devops stuff
 
