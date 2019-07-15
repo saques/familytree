@@ -143,6 +143,10 @@ type alias Person =
     , birthDate : String
     }
 
+personListDecoder : D.Decoder (List Person)
+personListDecoder = 
+    D.list personDecoder
+
 personDecoder : D.Decoder Person
 personDecoder = 
     D.succeed Person

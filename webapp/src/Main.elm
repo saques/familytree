@@ -30,6 +30,7 @@ import Snippets.Navbar exposing (..)
 import Snippets.Home exposing (..)
 import Snippets.MainPage exposing (..)
 import Snippets.FamilyTree exposing (..)
+import Snippets.FamilyTreeQuery exposing (..)
 
 import Bootstrap.Accordion as Accordion
 
@@ -64,7 +65,9 @@ init flags url key =
                             userLogin = UserLogin "" "" "" False,
                             globalError = "",
                             ftData = ftDataInit,
-                            personForm = emptyPerson}
+                            personForm = emptyPerson,
+                            disease = "",
+                            queryPersons = []}
     in
         ( model, Cmd.batch [ urlCmd, navCmd ] )
 
@@ -96,8 +99,15 @@ update msg model =
             --urlUpdate url model
             (model, Cmd.none)
 
-        Goto page -> ({model | ftData = ftDataInit, 
-                               page = page, 
+        Goto Home -> ({model | ftData = ftDataInit, 
+                               page = Home, 
+                               personForm = emptyPerson,
+                               queryPersons = [],
+                               accordionState = Accordion.initialState}, Cmd.none)
+
+        Goto page -> ({model | page = page,
+                               personForm = emptyPerson, 
+                               queryPersons = [],
                                accordionState = Accordion.initialState}, Cmd.none)
 
         NavMsg state ->
@@ -142,6 +152,8 @@ update msg model =
                             accordionState = Accordion.initialState,
                             ftData = ftDataInit,
                             page = Home,
+                            queryPersons = [],
+                            personForm = emptyPerson,
                             globalError = "" }, Cmd.none)
 
         SetFtName name -> ( { model | ftData = ftDataSetName name model.ftData }, Cmd.none)
@@ -166,7 +178,7 @@ update msg model =
                 Err e -> ( model, Cmd.none )
                 Ok ft -> ( { model | ftData = (ftDataSetFT ft model.ftData),
                                                modalVisibility = Modal.hidden,
-                                               page = FamilyTree,
+                                               page = FamilyTreeView,
                                                globalError = "" }, Cmd.none)
 
         LoadFamilyTree -> (model, getFamilyTreeByName model)
@@ -205,6 +217,17 @@ update msg model =
                         Just responseId -> ( model, getFamilyTreeById model.ftData.id model) 
 
         AddPersonAsParent level childId -> (model, addPersonAsParent model level childId)
+
+        SetOneDisease s -> ({model | disease = s}, Cmd.none)
+
+        SetAge s -> ({model | personForm = setAge s model.personForm}, Cmd.none)
+
+        QueryPersons -> (model, queryPersons model)
+
+        ResponseQueryPersons result ->
+            case result of 
+                Err e -> ({model | globalError = "Error during query"}, Cmd.none)
+                Ok persons -> ({model | queryPersons = persons, globalError = ""}, Cmd.none)
 
 
 
@@ -259,8 +282,11 @@ mainContent model =
             NotFound ->
                 pageNotFound
 
-            FamilyTree ->
+            FamilyTreeView ->
                 ftView model
+
+            FamilyTreeQuery ->
+                ftQuery model
 
 
 pageNotFound : List (Html Msg)

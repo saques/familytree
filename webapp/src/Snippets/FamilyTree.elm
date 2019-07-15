@@ -22,9 +22,21 @@ import Dto.FamilyTreeDto exposing (..)
 
 ftView : Model -> List (Html Msg)
 ftView model =
-    [ h1 [] [ text model.ftData.name ]
-    , Grid.containerFluid []
+    [Grid.containerFluid []
         [
+            Grid.row [Row.attrs [Spacing.p3]]
+            [
+                Grid.col [Col.textAlign Text.alignMdLeft]
+                [
+                  h1 [] [ text model.ftData.name ]  
+                ],
+                Grid.col [Col.textAlign Text.alignMdRight]
+                [
+                    Button.button [ Button.secondary, 
+                                Button.attrs [onClick (Goto FamilyTreeQuery)] ]
+                                [ text "Query this tree" ]
+                ]
+            ],
             Grid.row [Row.centerMd]
             [
                 Grid.col [Col.textAlign Text.alignMdRight]

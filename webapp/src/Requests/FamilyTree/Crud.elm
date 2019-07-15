@@ -61,7 +61,7 @@ mapDeseaseToNumber s =
       "Cancer" -> "0"
       "Diabetes" -> "1"
       "Leukemia" -> "2"
-      _ -> "3"
+      _ -> ""
           
 
 diseasesToString : List String -> String
@@ -115,6 +115,43 @@ addPersonAsParent model level childId =
                 ("deseases", diseasesToString model.personForm.diseases)
               ]
     , expect = Http.expectJson (ResponseAddToLevel) responseIdListDecoder
+    , timeout = Nothing
+    , tracker = Nothing
+    }
+
+
+buildQueryParams : List (String, String) -> String
+buildQueryParams l = 
+  let
+      listOfKeyVal = List.map (\x -> (Tuple.first x) ++ "=" ++ (Tuple.second x)) (List.filter (\x -> not (String.isEmpty (Tuple.second x))) l)
+  in String.join "&" listOfKeyVal
+  
+
+ifAge0Empty : String -> String
+ifAge0Empty a = 
+  if a == "0"
+    then ""
+    else a
+
+queryPersons : Model -> Cmd Msg
+queryPersons model = 
+  Http.request
+    { method = "GET"
+    , headers = [(Http.header "Token" model.userLogin.token)]
+    , url = api ++ "family-tree/" ++ (String.fromInt model.ftData.id) ++ "/filter?" ++ buildQueryParams 
+                                        [
+                                          ("name", model.personForm.name),
+                                          ("lastName", model.personForm.lastname),
+                                          ("deathPlace", model.personForm.deathPlace),
+                                          ("hairColor", model.personForm.hairColor),
+                                          ("eyeColor", model.personForm.eyeColor),
+                                          ("skinColor", model.personForm.skinColor),
+                                          ("age", ifAge0Empty (String.fromInt model.personForm.age)),
+                                          ("profession", model.personForm.profession),
+                                          ("desease", mapDeseaseToNumber model.disease)
+                                        ]
+    , body = Http.emptyBody
+    , expect = Http.expectJson (ResponseQueryPersons) personListDecoder
     , timeout = Nothing
     , tracker = Nothing
     }

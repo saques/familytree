@@ -104,7 +104,8 @@ type Page
     = Home
     | MainPage
     | NotFound
-    | FamilyTree
+    | FamilyTreeView
+    | FamilyTreeQuery
 
 
 type alias Flags =
@@ -121,6 +122,8 @@ type alias Model =
     , globalError : String
     , ftData : FTData
     , personForm : Person
+    , disease : String
+    , queryPersons : List Person
     }
 
 type Msg
@@ -156,6 +159,10 @@ type Msg
     | AddPersonToLevel Int
     | ResponseAddToLevel (Result Http.Error (List ResponseId))
     | AddPersonAsParent Int Int
+    | SetOneDisease String
+    | SetAge String
+    | QueryPersons
+    | ResponseQueryPersons (Result Http.Error (List Person))
 
 toggleDisease : String -> Bool -> Person -> Person
 toggleDisease s b p = 
@@ -185,8 +192,12 @@ setEyeColor s p = {p | eyeColor = s}
 setName : String -> Person -> Person
 setName s p = {p | name = s}
 
+setAge : String -> Person -> Person
+setAge s p = {p | age = Maybe.withDefault (-1) (String.toInt s)}
+
 setProfession : String -> Person -> Person
 setProfession s p = {p | profession = s}
 
 setBirthDate : String -> Person -> Person
 setBirthDate s p = {p | birthDate = s}
+
